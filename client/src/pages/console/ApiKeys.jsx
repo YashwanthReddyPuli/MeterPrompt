@@ -221,6 +221,10 @@ export default function ApiKeys() {
                   className="w-full px-3.5 py-2.5 bg-white border border-zinc-300 rounded-xl text-xs text-zinc-900 outline-none focus:border-[#5865f2] focus:ring-2 focus:ring-[#5865f2]/20 cursor-pointer font-medium"
                 >
                   <option value="never">No Expiration</option>
+                  <option value="1h">1 Hour</option>
+                  <option value="1d">1 Day</option>
+                  <option value="3d">3 Days</option>
+                  <option value="7d">7 Days</option>
                   <option value="30d">30 Days</option>
                   <option value="60d">60 Days</option>
                   <option value="90d">90 Days</option>

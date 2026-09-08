@@ -140,6 +140,10 @@ const createApiKey = async (req, res, next) => {
     const { rawKey, keyHash, prefix } = generateApiKey();
 
     let expiresAt = null;
+    if (expiresIn === '1h') expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000);
+    if (expiresIn === '1d') expiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
+    if (expiresIn === '3d') expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    if (expiresIn === '7d') expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     if (expiresIn === '30d') expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     if (expiresIn === '60d') expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
     if (expiresIn === '90d') expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
