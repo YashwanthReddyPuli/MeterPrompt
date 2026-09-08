@@ -24,9 +24,9 @@ export default function AddCreditsModal({ isOpen, onClose, onAddCredits, isProce
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Explicit Single Backdrop Layer */}
+      {/* Clean Light Scrim Backdrop Without Blur */}
       <div 
-        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        className="fixed inset-0 bg-black/20 transition-opacity" 
         onClick={() => !isProcessing && onClose()} 
       />
 

@@ -7,9 +7,9 @@ export default function InvoiceReceiptModal({ isOpen, onClose, details }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 overflow-y-auto">
-      {/* Explicit Single Backdrop Layer */}
+      {/* Clean Light Scrim Backdrop Without Blur */}
       <div 
-        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        className="fixed inset-0 bg-black/20 transition-opacity" 
         onClick={onClose} 
       />
 

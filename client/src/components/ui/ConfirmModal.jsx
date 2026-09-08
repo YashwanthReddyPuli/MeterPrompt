@@ -16,9 +16,9 @@ export default function ConfirmModal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Explicit Single Backdrop Layer */}
+      {/* Clean Light Scrim Backdrop Without Blur */}
       <div 
-        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        className="fixed inset-0 bg-black/20 transition-opacity" 
         onClick={onCancel} 
       />
 
@@ -33,7 +33,7 @@ export default function ConfirmModal({
 
         <p className="text-xs text-zinc-600 leading-relaxed font-medium">{message}</p>
 
-        {/* Fixed Modal Action Buttons */}
+        {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-100 mt-4">
           <button
             type="button"

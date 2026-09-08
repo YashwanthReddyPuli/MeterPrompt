@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 import apiClient from '../../services/apiClient';
@@ -483,20 +484,27 @@ export default function Credits() {
       />
 
       {/* MODAL 2: CONFIRMATION DIALOG MODAL FOR TIER SWITCH */}
-      {selectedPlanForSwitch && (
-        <div className="fixed inset-0 bg-zinc-950/25 backdrop-blur-[1.5px] flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-card border border-zinc-300 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+      {selectedPlanForSwitch && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Clean Light Scrim Backdrop Without Blur */}
+          <div 
+            className="fixed inset-0 bg-black/20 transition-opacity" 
+            onClick={() => !switchLoading && setSelectedPlanForSwitch(null)} 
+          />
+
+          {/* Modal Surface Container */}
+          <div className="relative z-10 bg-white border border-zinc-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3 border-b border-zinc-200 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-[#5865f2]/10 text-[#5865f2] flex items-center justify-center font-bold">
                 <Zap size={20} />
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-[#1e1f24]">Confirm Subscription Tier Switch</h3>
-                <p className="text-xs text-muted-foreground">Prorated adjustment applied to account credit</p>
+                <p className="text-xs text-zinc-500">Prorated adjustment applied to account credit</p>
               </div>
             </div>
 
-            <div className="space-y-3 text-xs bg-secondary/70 p-4 rounded-xl border border-zinc-300">
+            <div className="space-y-3 text-xs bg-zinc-50 p-4 rounded-xl border border-zinc-200">
               <div className="flex items-center justify-between">
                 <span className="text-zinc-600">New Target Plan:</span>
                 <strong className="text-[#1e1f24] font-extrabold">{selectedPlanForSwitch.name}</strong>
@@ -513,6 +521,7 @@ export default function Credits() {
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
+                type="button"
                 onClick={() => setSelectedPlanForSwitch(null)}
                 disabled={switchLoading}
                 className="px-4 py-2.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition cursor-pointer"
@@ -520,6 +529,7 @@ export default function Credits() {
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmTierSwitch}
                 disabled={switchLoading}
                 className="bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-extrabold px-5 py-2.5 rounded-xl transition shadow-md shadow-[#5865f2]/25 cursor-pointer flex items-center gap-2"
@@ -528,7 +538,8 @@ export default function Credits() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 3: ANIMATED TICKET CONFIRMATION RECEIPT MODAL */}

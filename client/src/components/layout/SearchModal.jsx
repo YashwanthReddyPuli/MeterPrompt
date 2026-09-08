@@ -17,9 +17,9 @@ export default function SearchModal({ isOpen, onClose, setCurrentRoute, navigate
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20">
-      {/* Explicit Single Backdrop Layer */}
+      {/* Clean Light Scrim Backdrop Without Blur */}
       <div 
-        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        className="fixed inset-0 bg-black/20 transition-opacity" 
         onClick={onClose} 
       />
 
