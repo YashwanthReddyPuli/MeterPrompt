@@ -136,17 +136,24 @@ const getMe = async (req, res, next) => {
  */
 const createApiKey = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, expiresIn } = req.body;
     const { rawKey, keyHash, prefix } = generateApiKey();
 
-    const user = await User.findById(req.user._id);
-    user.apiKeys.push({
-      keyHash,
-      name: name || 'API Key',
-      prefix,
-      createdAt: new Date()
-    });
+    let expiresAt = null;
+    if (expiresIn === '30d') expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    if (expiresIn === '60d') expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    if (expiresIn === '90d') expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
+    const user = await User.findById(req.user._id);
+    const keyData = {
+      keyHash,
+      name: name?.trim() || 'Default Live Key',
+      prefix,
+      createdAt: new Date(),
+      expiresAt
+    };
+
+    user.apiKeys.push(keyData);
     await user.save();
 
     return res.status(201).json({
@@ -154,9 +161,11 @@ const createApiKey = async (req, res, next) => {
       message: 'API key generated successfully. Save this raw key securely; it will not be shown again.',
       data: {
         apiKey: rawKey,
+        key: rawKey,
         prefix,
-        name: name || 'API Key',
-        createdAt: new Date()
+        name: keyData.name,
+        createdAt: keyData.createdAt,
+        expiresAt: keyData.expiresAt
       }
     });
   } catch (error) {

@@ -20,6 +20,9 @@ const apiKeySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  expiresAt: {
+    type: Date
+  },
   lastUsed: {
     type: Date
   }

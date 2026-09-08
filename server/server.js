@@ -44,6 +44,7 @@ app.get('/api/health', healthHandler);
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/keys', authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/billing', billingRoutes);
