@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    outline: none !important;
+  }
+
+  input:focus,
+  input:focus-visible,
+  textarea:focus,
+  textarea:focus-visible,
+  select:focus,
+  select:focus-visible {
+    outline: none !important;
+  }
+}
+
+:root {
+  --background: #fbfbfb;
+  --foreground: #28282d;
+  --card: #ffffff;
+  --card-foreground: #28282d;
+  --popover: #ffffff;
+  --popover-foreground: #28282d;
+  --primary: #5865f2;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f2f3;
+  --secondary-foreground: #28282d;
+  --muted: #f6f6f6;
+  --muted-foreground: #6c6d76;
+  --accent: #eeeef0;
+  --accent-foreground: #28282d;
+  --destructive: #b92733;
+  --destructive-foreground: #ffffff;
+  --border: #c4c4c8;
+  --input: #f2f2f3;
+  --ring: #5865f2;
+  --radius: 0.625rem;
+
+  /* Sidebar Tokens */
+  --sidebar: #f3f3f4;
+  --sidebar-foreground: #666770;
+  --sidebar-primary: #dddde0;
+  --sidebar-primary-foreground: #28282d;
+  --sidebar-accent: #e7e7e9;
+  --sidebar-accent-foreground: #28282d;
+  --sidebar-border: #d9d9dc;
+  --sidebar-ring: #00b0f4;
+
+  /* Chart Accents */
+  --chart-1: #f5a3d1;
+  --chart-2: #f5d18a;
+  --chart-3: #a3f5d1;
+  --chart-4: #a3d1f5;
+  --chart-5: #d1a3f5;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
