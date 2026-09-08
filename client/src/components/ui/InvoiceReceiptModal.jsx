@@ -1,12 +1,20 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatedTicket } from './ticket-confirmation-card';
 
 export default function InvoiceReceiptModal({ isOpen, onClose, details }) {
   if (!isOpen || !details) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/25 backdrop-blur-[1.5px] p-4 animate-in fade-in duration-150 overflow-y-auto">
-      <div className="relative flex flex-col items-center my-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 overflow-y-auto">
+      {/* Explicit Single Backdrop Layer */}
+      <div 
+        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        onClick={onClose} 
+      />
+
+      {/* Ticket Surface Container */}
+      <div className="relative z-10 flex flex-col items-center my-auto">
         <AnimatedTicket 
           ticketId={details.invoiceId || `INV-${Date.now().toString().slice(-6)}`}
           date={details.date || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -23,6 +31,7 @@ export default function InvoiceReceiptModal({ isOpen, onClose, details }) {
           Dismiss & Return to Console
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

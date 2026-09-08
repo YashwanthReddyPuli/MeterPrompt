@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { RefreshCw, ShieldCheck } from 'lucide-react';
 
@@ -8,12 +9,6 @@ export default function AddCreditsModal({ isOpen, onClose, onAddCredits, isProce
   const [validationError, setValidationError] = useState('');
 
   if (!isOpen) return null;
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !isProcessing) {
-      onClose();
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,12 +22,16 @@ export default function AddCreditsModal({ isOpen, onClose, onAddCredits, isProce
     onAddCredits(Number(parsed.toFixed(2)));
   };
 
-  return (
-    <div 
-      onClick={handleBackdropClick}
-      className="fixed inset-0 bg-foreground/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 transition-opacity"
-    >
-      <div className="bg-card border border-zinc-300 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Explicit Single Backdrop Layer */}
+      <div 
+        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        onClick={() => !isProcessing && onClose()} 
+      />
+
+      {/* Modal Surface Container */}
+      <div className="relative z-10 bg-white border border-zinc-300 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in fade-in">
         <div>
           <h3 className="text-lg font-extrabold text-[#1e1f24]">Top Up Gateway Credit Balance</h3>
           <p className="text-xs text-muted-foreground mt-1">
@@ -97,6 +96,7 @@ export default function AddCreditsModal({ isOpen, onClose, onAddCredits, isProce
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Zap } from "lucide-react";
 
 export default function ConfirmModal({ 
@@ -13,9 +14,16 @@ export default function ConfirmModal({
 }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/25 backdrop-blur-[1.5px] p-4 animate-in fade-in duration-150">
-      <div className="bg-white border border-zinc-200 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-150 space-y-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Explicit Single Backdrop Layer */}
+      <div 
+        className="fixed inset-0 bg-zinc-950/20 transition-opacity" 
+        onClick={onCancel} 
+      />
+
+      {/* Modal Surface */}
+      <div className="relative z-10 bg-white border border-zinc-200 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-150 space-y-4">
         <div className="flex items-center gap-3 border-b border-zinc-100 pb-3">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
             <Zap size={18} />
@@ -56,6 +64,7 @@ export default function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
