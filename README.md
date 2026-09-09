@@ -19,10 +19,10 @@
 
 | S.No | Student Name | Roll No. | Department | Section | Assigned Sprint Ownership |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | **Yashwanth Reddy Puli** | `22112345` | Computer Science | 5 BCD | **Sprint 1 — Foundation:** User Auth, JWT, RBAC Middleware, Plan Management CRUD |
-| **2** | **Team Member 2** | `22112346` | Computer Science | 5 BCD | **Sprint 2 — Core Workflow:** Subscription Creation, Mid-Cycle Proration, AI Token Gateway Proxy |
-| **3** | **Team Member 3** | `22112347` | Computer Science | 5 BCD | **Sprint 3 — Reporting & Polish:** Dunning Engine, Coupon System, MRR Analytics, Postman & README |
-| **4** | **Team Member 4** | `22112348` | Computer Science | 5 BCD | **QA & UI Integration:** Error Boundary, Custom Failure Screens, PDF Receipt Engine |
+| **1** | **Puli Balaji Yashwanth Reddy** | `2462128` | Computer Science | 5 BCD | **Sprint 1 — Foundation:** User Auth, JWT, RBAC Middleware, Plan Management CRUD |
+| **2** | **Rhea Tess Payyapilly** | `2462137` | Computer Science | 5 BCD | **Sprint 2 — Core Workflow:** Subscription Creation, Mid-Cycle Proration, AI Token Gateway Proxy |
+| **3** | **Prajwal V L** | `2462181` | Computer Science | 5 BCD | **Sprint 3 — Reporting & Polish:** Dunning Engine, Coupon System, MRR Analytics, Postman & README |
+| **4** | **Rebecca Lenin Koshy** | `2462134` | Computer Science | 5 BCD | **QA & UI Integration:** Error Boundary, Custom Failure Screens, PDF Receipt Engine |
 
 ---
 
