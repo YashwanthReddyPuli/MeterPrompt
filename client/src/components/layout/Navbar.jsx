@@ -1,3 +1,6 @@
+import React from 'react';
+import { Search } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { UserDropdown } from '../ui/user-dropdown';
 
 export default function Navbar({ currentRoute, setCurrentRoute, onOpenSearch, setAuthMode }) {

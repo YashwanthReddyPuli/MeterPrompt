@@ -21,14 +21,15 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center text-center py-24 px-6 min-h-screen">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">Something Went Wrong</h1>
-          <p className="text-xl text-gray-600 mb-6">
-            An unexpected error occurred. Try refreshing the page.
+        <div className="flex flex-col items-center justify-center text-center py-24 px-6 min-h-screen bg-[#fafafa]">
+          <h1 className="text-4xl font-extrabold text-zinc-900 mb-3 tracking-tight">Something Went Wrong</h1>
+          <p className="text-sm text-zinc-500 mb-6 max-w-md">
+            An unexpected application error occurred. Click below to clear corrupt state and return to home.
           </p>
           <button
+            type="button"
             onClick={this.handleReload}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition"
+            className="px-5 py-2.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
           >
             Back to Home
           </button>
