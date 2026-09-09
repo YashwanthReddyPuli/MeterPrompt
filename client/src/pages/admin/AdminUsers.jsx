@@ -153,8 +153,11 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td className="py-3.5 px-5 font-semibold text-zinc-800">
-                      {u.subscription ? `${u.subscription.planName} (${u.subscription.billingCycle})` : 'Starter (Free / Default)'}
+                      {u.currentPlanName && u.currentPlanName !== 'No Active Plan' 
+                        ? `${u.currentPlanName} (${u.billingCycle || 'monthly'})` 
+                        : (u.subscription?.planId?.name ? `${u.subscription.planId.name} (${u.subscription.planId.billingCycle || 'monthly'})` : 'Starter (Free / Default)')}
                     </td>
+
                     <td className="py-3.5 px-5 font-mono font-bold text-emerald-700">
                       ${Number(u.creditsBalance).toFixed(2)}
                     </td>
