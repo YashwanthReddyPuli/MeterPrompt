@@ -6,12 +6,14 @@ import Footer from './components/layout/Footer';
 import SearchModal from './components/layout/SearchModal';
 import CreateKeyModal from './components/common/CreateKeyModal';
 import AddCreditsModal from './components/common/AddCreditsModal';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Pages
 import LandingPage from './pages/public/LandingPage';
 import ModelsCatalog from './pages/public/ModelsCatalog';
 import DocsPage from './pages/public/DocsPage';
 import AuthPage from './pages/auth/AuthPage';
+import NotFound from './pages/errors/NotFound';
 
 // Console Pages
 import Overview from './pages/console/Overview';
@@ -27,7 +29,14 @@ import apiClient from './services/apiClient';
 
 function AppContent() {
   const { user, showNotification } = useAuth();
-  const [currentRoute, setCurrentRoute] = useState('landing');
+  const [currentRoute, setCurrentRoute] = useState(
+    window.location.pathname === '/' ? 'landing' : 'not-found'
+  );
+    React.useEffect(() => {
+    if (currentRoute === 'landing') {
+      window.history.pushState({}, '', '/');
+    }
+  }, [currentRoute]);
   const [docsTab, setDocsTab] = useState('overview');
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
@@ -121,6 +130,9 @@ function AppContent() {
           {currentRoute === 'auth' && (
             <AuthPage authMode={authMode} setAuthMode={setAuthMode} setCurrentRoute={setCurrentRoute} />
           )}
+          {!['landing', 'pricing', 'docs', 'auth'].includes(currentRoute) && (
+            <NotFound setCurrentRoute={setCurrentRoute} />
+          )}
         </main>
       )}
 
@@ -152,8 +164,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

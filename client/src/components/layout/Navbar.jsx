@@ -108,7 +108,7 @@ export default function Navbar({ currentRoute, setCurrentRoute, onOpenSearch, se
                   </button>
 
                   <button 
-                    onClick={() => { logout(); setDropdownOpen(false); }}
+                    onClick={() => { logout(); setCurrentRoute('landing'); setDropdownOpen(false); }}
                     className="w-full text-left px-3 py-1.5 text-destructive hover:bg-destructive/10 rounded-lg transition flex items-center gap-2 font-medium border-t border-border mt-1 pt-2"
                   >
                     <LogOut size={14} />
