@@ -308,6 +308,8 @@ const changePlan = async (req, res, next) => {
         plan: newPlan.name,
         billingCycle: targetCycle,
         status: 'active',
+        amountCharged: netAmountCharged,
+        invoiceId: invoice?.invoiceNumber || invoice?._id?.toString().slice(-8).toUpperCase(),
         currentPeriodEnd: subscription.currentPeriodEnd
       },
       previousAttributes: {
