@@ -37,15 +37,44 @@ import apiClient from './services/apiClient';
 
 
 
+function getInitialRoute() {
+  const path = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
+  const tab = searchParams.get('tab');
+
+  if (tab) {
+    return `console-${tab}`;
+  }
+
+  if (path === '/' || path === '') return 'landing';
+  if (path === '/pricing') return 'pricing';
+  if (path === '/docs') return 'docs';
+  if (path === '/auth') return 'auth';
+  if (path.startsWith('/console')) {
+    return 'console-overview';
+  }
+  return 'not-found';
+}
+
 function AppContent() {
   const { user, showNotification } = useAuth();
-  const [currentRoute, setCurrentRoute] = useState(
-    window.location.pathname === '/' ? 'landing' : 'not-found'
-  );
+  const [currentRoute, setCurrentRoute] = useState(getInitialRoute);
   
   React.useEffect(() => {
-    if (currentRoute === 'landing') {
-      window.history.pushState({}, '', '/');
+    if (currentRoute.startsWith('console-')) {
+      const tabName = currentRoute.replace('console-', '');
+      const newUrl = `${window.location.pathname}?tab=${tabName}`;
+      if (window.location.search !== `?tab=${tabName}`) {
+        window.history.pushState({}, '', newUrl);
+      }
+    } else if (currentRoute === 'landing') {
+      if (window.location.pathname !== '/' || window.location.search !== '') {
+        window.history.pushState({}, '', '/');
+      }
+    } else if (['pricing', 'docs', 'auth'].includes(currentRoute)) {
+      if (window.location.pathname !== `/${currentRoute}`) {
+        window.history.pushState({}, '', `/${currentRoute}`);
+      }
     }
   }, [currentRoute]);
   
@@ -66,12 +95,22 @@ function AppContent() {
 
   const isConsoleRoute = currentRoute.startsWith('console-');
 
-  // Automatic Admin Route Redirection
+  // Automatic Admin Route Redirection & Access Guarding
   React.useEffect(() => {
-    if (user?.role === 'admin' && isConsoleRoute && !currentRoute.startsWith('console-admin-')) {
-      setCurrentRoute('console-admin-overview');
+    if (!user && isConsoleRoute) {
+      setCurrentRoute('auth');
+      showNotification('info', 'Authentication required to access Console.');
+      return;
     }
-  }, [user, currentRoute, isConsoleRoute]);
+
+    if (user) {
+      if (user.role === 'admin' && isConsoleRoute && !currentRoute.startsWith('console-admin-')) {
+        setCurrentRoute('console-admin-overview');
+      } else if (user.role !== 'admin' && currentRoute.startsWith('console-admin-')) {
+        setCurrentRoute('console-overview');
+      }
+    }
+  }, [user, isConsoleRoute]);
 
   const navigateToConsole = (subRoute) => {
     if (!user) {
@@ -81,7 +120,7 @@ function AppContent() {
       return;
     }
     if (user.role === 'admin') {
-      setCurrentRoute('console-admin-overview');
+      setCurrentRoute(subRoute.startsWith('admin-') ? `console-${subRoute}` : 'console-admin-overview');
     } else {
       setCurrentRoute(`console-${subRoute}`);
     }

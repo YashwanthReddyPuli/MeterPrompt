@@ -4,11 +4,9 @@ import apiClient from '../services/apiClient';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('mp_user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('mp_token') || '');
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState('');
+  const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState('USD'); // Always USD
   const [serverStatus, setServerStatus] = useState('checking');
   const [subscription, setSubscription] = useState(null);
@@ -44,7 +42,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchSubscription = async () => {
-    if (!token) return;
+    const activeToken = token || localStorage.getItem('mp_token');
+    if (!activeToken) return;
     try {
       const res = await apiClient.get('/subscriptions/me');
       if (res.success) setSubscription(res.data);
@@ -54,7 +53,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchUserProfile = async () => {
-    if (!token) return;
+    const activeToken = token || localStorage.getItem('mp_token');
+    if (!activeToken) return;
     try {
       const res = await apiClient.get('/auth/me');
       if (res.success) {
@@ -67,20 +67,35 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('mp_token');
+      const storedUser = localStorage.getItem('mp_user');
+
+      if (storedToken && storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setToken(storedToken);
+          // Background verification of auth profile
+          fetchUserProfile();
+          fetchSubscription();
+        } catch (err) {
+          console.error('Session hydration failed:', err);
+          localStorage.removeItem('mp_token');
+          localStorage.removeItem('mp_user');
+          setUser(null);
+          setToken('');
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
     checkHealth();
     fetchPlans();
     const interval = setInterval(checkHealth, 15000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (token) {
-      fetchSubscription();
-      fetchUserProfile();
-    } else {
-      setSubscription(null);
-    }
-  }, [token]);
 
   const login = async (email, password) => {
     try {
@@ -123,10 +138,19 @@ export const AuthProvider = ({ children }) => {
     showNotification('success', 'Signed out successfully.');
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+        <div className="w-5 h-5 border-2 border-[#5865f2] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
       token,
+      loading,
       currency,
       setCurrency,
       serverStatus,
