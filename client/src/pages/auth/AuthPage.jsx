@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, RefreshCw, LogIn, UserPlus, Terminal, Shield, ArrowRight } from 'lucide-react';
+import logoIcon from '../../assets/logo-icon.svg';
 
 export default function AuthPage({ authMode, setAuthMode, setCurrentRoute }) {
   const { login, register } = useAuth();
@@ -36,9 +37,7 @@ export default function AuthPage({ authMode, setAuthMode, setCurrentRoute }) {
     <div className="py-10 max-w-md mx-auto">
       <div className="bg-white border border-zinc-300 p-8 rounded-2xl shadow-xl space-y-6">
         <div className="text-center space-y-1.5">
-          <div className="w-12 h-12 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-xl mx-auto shadow-md shadow-primary/25 mb-3">
-            MP
-          </div>
+          <img src={logoIcon} alt="MeterPrompt Icon" className="w-12 h-12 mx-auto mb-3" />
           <h2 className="text-2xl font-extrabold text-[#1e1f24] tracking-tight">
             {authMode === 'login' ? 'Sign In to MeterPrompt' : 'Create Developer Account'}
           </h2>

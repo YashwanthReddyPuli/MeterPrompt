@@ -25,31 +25,13 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
     { id: 'console-admin-dunning', label: 'Dunning & Recovery', icon: CreditCard },
   ];
 
-
-
   const navItems = user?.role === 'admin' ? adminNavItems : customerNavItems;
 
   return (
     <aside className="group relative z-20 shrink-0 bg-white border-r border-zinc-200 transition-all duration-300 ease-in-out w-16 hover:w-64 flex flex-col justify-between py-5 overflow-y-auto h-full shadow-xs hover:shadow-lg">
-      {/* Upper Navigation & Brand */}
+      {/* Upper Navigation */}
 
       <div className="flex flex-col gap-6">
-        {/* Logo / Brand Pill */}
-        <div 
-          onClick={() => setCurrentRoute('landing')}
-          className="flex items-center px-4 gap-3.5 h-8 cursor-pointer"
-        >
-          <div className="w-8 h-8 rounded-lg bg-[#5865f2] text-white flex items-center justify-center font-extrabold text-sm shrink-0 shadow-md shadow-[#5865f2]/20">
-            MP
-          </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap tracking-tight">
-            <span className="font-extrabold text-zinc-900 text-sm block">MeterPrompt</span>
-            {user?.role === 'admin' && (
-              <span className="text-[10px] font-extrabold text-[#5865f2] uppercase tracking-wider block">Admin Control</span>
-            )}
-          </div>
-        </div>
-
         {/* Navigation Items */}
         <nav className="flex flex-col gap-1.5 px-2.5">
           {navItems.map((item) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, ShieldCheck, Sparkles } from "lucide-react";
 import confetti from "canvas-confetti";
+import logoIcon from "../../assets/logo-icon.svg";
 
 export function AnimatedTicket({
   ticketId = "INV-928374",
@@ -40,9 +41,7 @@ export function AnimatedTicket({
         {/* HEADER BRANDING */}
         <div className="bg-[#5865f2] text-white p-6 text-center space-y-2 relative overflow-hidden">
           <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md text-white font-black text-xl mb-1 shadow-inner">
-            MP
-          </div>
+          <img src={logoIcon} alt="MeterPrompt Icon" className="w-12 h-12 mx-auto mb-1 rounded-2xl bg-white/20 p-1 backdrop-blur-md" />
           <h2 className="text-xl font-extrabold tracking-tight">MeterPrompt Gateway</h2>
           <p className="text-[11px] font-medium text-white/80 uppercase tracking-widest">
             Payment & Activation Receipt

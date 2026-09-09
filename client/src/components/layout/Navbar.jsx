@@ -3,6 +3,8 @@ import { Search } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserDropdown } from '../ui/user-dropdown';
 
+import logoLockup from '../../assets/logo-lockup.svg';
+
 export default function Navbar({ currentRoute, setCurrentRoute, onOpenSearch, setAuthMode }) {
   const { user, logout } = useAuth();
 
@@ -25,14 +27,9 @@ export default function Navbar({ currentRoute, setCurrentRoute, onOpenSearch, se
         <div className="flex items-center gap-6">
           <button 
             onClick={() => setCurrentRoute('landing')} 
-            className="flex items-center gap-2.5 hover:opacity-90 transition text-left cursor-pointer"
+            className="flex items-center hover:opacity-90 transition text-left cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-sm shadow-primary/30">
-              MP
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-foreground">MeterPrompt</span>
-            </div>
+            <img src={logoLockup} alt="MeterPrompt" className="h-8 w-auto block" />
           </button>
 
           {/* Quick Search Bar Trigger (Ctrl+K) */}

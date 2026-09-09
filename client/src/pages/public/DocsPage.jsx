@@ -1,19 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, Terminal, ShieldCheck, Zap, Layers, CreditCard, AlertTriangle, 
-  Copy, Check, ChevronRight, Server, Lock, Cpu, Code2, RefreshCw, Sparkles,
-  Database, Key, CheckCircle2, ArrowRight, CornerDownRight, Activity, BookOpen, Clock, Tag
-} from 'lucide-react';
+import { Copy, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function DocsPage({ docsTab = 'quickstart', setDocsTab }) {
-  const [activeSection, setActiveSection] = useState('quickstart');
+export default function DocsPage({ docsTab = 'introduction', setDocsTab }) {
+  const [activeSection, setActiveSection] = useState('introduction');
   const [searchQuery, setSearchQuery] = useState('');
-  const [requestLang, setRequestLang] = useState('curl'); // 'curl' | 'js' | 'python' | 'openai'
-  const [responseTab, setResponseTab] = useState('200'); // '200' | '400' | '401'
-  const [copiedSnippet, setCopiedSnippet] = useState(false);
-  const [mobileTab, setMobileTab] = useState('content'); // 'content' | 'console'
+  const [copiedId, setCopiedId] = useState(null);
 
-  // Synchronize state with props and URL query params
+  // Sync state with props & URL search params/hash
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') || window.location.hash.replace('#', '');
@@ -24,35 +17,27 @@ export default function DocsPage({ docsTab = 'quickstart', setDocsTab }) {
     }
   }, [docsTab]);
 
-  // Global Keyboard Shortcut (Cmd/Ctrl + K) for Search Input
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.getElementById('docs-search-input');
-        if (searchInput) searchInput.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const normalizeTabKey = (key) => {
     const sectionMap = {
-      'overview': 'quickstart',
-      'quickstart': 'quickstart',
+      'introduction': 'introduction',
+      'overview': 'introduction',
       'auth': 'auth',
+      'authentication': 'auth',
       'keys': 'auth',
-      'completions': 'completions',
-      'proxy': 'completions',
-      'subscriptions': 'subscriptions',
-      'proration': 'subscriptions',
+      'first-request': 'first-request',
+      'quickstart': 'first-request',
+      'usage-quotas': 'usage-quotas',
+      'metering': 'usage-quotas',
+      'plans-proration': 'plans-proration',
+      'subscriptions': 'plans-proration',
+      'proration': 'plans-proration',
       'coupons': 'coupons',
       'dunning': 'dunning',
       'errors': 'errors',
-      'status-codes': 'errors'
+      'api-reference': 'api-reference',
+      'reference': 'api-reference'
     };
-    return sectionMap[key] || 'quickstart';
+    return sectionMap[key] || 'introduction';
   };
 
   const handleSelectSection = (sectionId) => {
@@ -61,207 +46,585 @@ export default function DocsPage({ docsTab = 'quickstart', setDocsTab }) {
     if (setDocsTab) setDocsTab(normalized);
     const newUrl = `${window.location.pathname}?tab=${normalized}`;
     window.history.pushState({ path: newUrl }, '', newUrl);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
-    setCopiedSnippet(true);
-    setTimeout(() => setCopiedSnippet(false), 2000);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Section Specifications & Data Mapping
-  const docSections = [
+  // Nav Structure Outline
+  const pages = [
+    { id: 'introduction', title: 'Introduction', group: 'GETTING STARTED' },
+    { id: 'auth', title: 'Authentication', group: 'GETTING STARTED' },
+    { id: 'first-request', title: 'Making your first request', group: 'GETTING STARTED' },
+    { id: 'usage-quotas', title: 'Understanding usage & quotas', group: 'CORE CONCEPTS' },
+    { id: 'plans-proration', title: 'Plans & proration', group: 'CORE CONCEPTS' },
+    { id: 'coupons', title: 'Coupons & promotional discounts', group: 'CORE CONCEPTS' },
+    { id: 'dunning', title: 'Handling failed payments (dunning)', group: 'CORE CONCEPTS' },
+    { id: 'errors', title: 'Errors & status codes', group: 'DIAGNOSTICS' },
+    { id: 'api-reference', title: 'API reference', group: 'REFERENCE' }
+  ];
+
+  // Group pages for sidebar rendering
+  const navigationGroups = [
     {
-      group: 'Getting Started',
-      items: [
-        { id: 'quickstart', label: 'Quickstart & Base URLs', status: 'Core' },
-        { id: 'auth', label: 'Authentication & API Keys', status: 'JWT / SHA-256' }
-      ]
+      title: 'Getting Started',
+      items: pages.filter(p => p.group === 'GETTING STARTED')
     },
     {
-      group: 'API Reference',
-      items: [
-        { id: 'completions', label: 'POST /v1/chat/completions', method: 'POST', isProxy: true },
-        { id: 'subscriptions', label: 'PUT /subscriptions/change-plan', method: 'PUT' },
-        { id: 'coupons', label: 'POST /coupons/apply', method: 'POST' },
-        { id: 'dunning', label: 'POST /billing/retry-failed', method: 'POST', badge: 'Admin' }
-      ]
+      title: 'Core Concepts',
+      items: pages.filter(p => p.group === 'CORE CONCEPTS')
     },
     {
-      group: 'Platform Diagnostics',
-      items: [
-        { id: 'errors', label: 'Standard Error Envelopes', status: 'AppError' }
-      ]
+      title: 'Diagnostics',
+      items: pages.filter(p => p.group === 'DIAGNOSTICS')
+    },
+    {
+      title: 'Reference',
+      items: pages.filter(p => p.group === 'REFERENCE')
     }
   ];
 
-  // Request Code Snippets Mapping
-  const codeSnippets = {
-    quickstart: {
-      curl: `curl -X GET http://localhost:5000/api/plans \\
-  -H "Accept: application/json"`,
-      js: `const response = await fetch('http://localhost:5000/api/plans');
-const catalog = await response.json();
-console.log(catalog);`,
-      python: `import requests
+  // Filter items by search query
+  const filteredGroups = navigationGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => 
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })).filter(group => group.items.length > 0);
 
-response = requests.get("http://localhost:5000/api/plans")
-print(response.json())`,
-      openai: `// Fetch Gateway Tiers
-const catalog = await fetch('http://localhost:5000/api/plans').then(r => r.json());
-console.log('Available tiers:', catalog.data);`
-    },
-    auth: {
-      curl: `curl -X POST http://localhost:5000/api/auth/login \\
+  // Compute Prev / Next Pager
+  const currentIndex = pages.findIndex(p => p.id === activeSection);
+  const prevPage = currentIndex > 0 ? pages[currentIndex - 1] : null;
+  const nextPage = currentIndex < pages.length - 1 ? pages[currentIndex + 1] : null;
+
+  // Inline Scoped Code Block Component
+  const CodeBlock = ({ id, snippets }) => {
+    const [selectedLang, setSelectedLang] = useState('curl');
+    const snippetText = snippets[selectedLang] || snippets.curl || '';
+
+    return (
+      <div className="my-6 rounded-lg bg-[#121215] border border-zinc-800 font-mono text-xs overflow-hidden">
+        {/* Top Minimal Header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-[#18181c] border-b border-zinc-800 text-zinc-400">
+          <div className="flex items-center gap-1">
+            {Object.keys(snippets).map(lang => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setSelectedLang(lang)}
+                className={`px-2.5 py-1 rounded text-[11px] font-sans font-medium transition cursor-pointer ${
+                  selectedLang === lang ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'hover:text-zinc-200'
+                }`}
+              >
+                {lang === 'openai' ? 'OpenAI SDK' : lang}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => copyToClipboard(snippetText, `${id}-${selectedLang}`)}
+            className="flex items-center gap-1.5 text-[11px] font-sans text-zinc-400 hover:text-zinc-200 cursor-pointer"
+          >
+            {copiedId === `${id}-${selectedLang}` ? (
+              <>
+                <Check size={13} className="text-zinc-200" />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy size={13} />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Code Content */}
+        <div className="p-4 overflow-x-auto text-zinc-200 leading-relaxed text-[12px]">
+          <pre>{snippetText}</pre>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FAFAFA] text-[#0A0A0A] font-sans antialiased">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
+
+        {/* LEFT: PERSISTENT SIDEBAR NAV */}
+        <aside className="w-full md:w-64 shrink-0 border-r border-zinc-200 p-6 md:min-h-screen bg-[#FAFAFA]">
+          {/* Top Search Input */}
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search docs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded focus:outline-none focus:border-zinc-900 transition-colors text-zinc-900 placeholder-zinc-400"
+            />
+          </div>
+
+          {/* Navigation Groups */}
+          <nav className="space-y-6">
+            {filteredGroups.map((group, groupIdx) => (
+              <div key={groupIdx} className="space-y-2">
+                <h3 className="text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">
+                  {group.title}
+                </h3>
+                <ul className="space-y-1">
+                  {group.items.map(item => {
+                    const isActive = activeSection === item.id;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSection(item.id)}
+                          className={`w-full text-left px-3 py-1.5 text-xs transition-colors cursor-pointer border-l-2 ${
+                            isActive
+                              ? 'border-zinc-900 text-zinc-900 font-bold bg-transparent'
+                              : 'border-transparent text-zinc-600 hover:text-zinc-900 hover:border-zinc-300'
+                          }`}
+                        >
+                          {item.title}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* RIGHT: SINGLE CONTENT COLUMN (MAX-WIDTH 720PX) */}
+        <main className="flex-1 p-6 md:p-12 max-w-3xl min-w-0">
+          
+          {/* 1. INTRODUCTION */}
+          {activeSection === 'introduction' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Introduction</h1>
+              
+              <p className="text-base text-zinc-700 leading-relaxed">
+                MeterPrompt is a developer platform designed to sit between your client software and third-party artificial intelligence inference APIs. It handles two separate but interdependent responsibilities: proxying inference requests to upstream language model providers, and executing real-time metered billing and quota management for your users.
+              </p>
+
+              <p>
+                Building applications backed by Large Language Models presents unique infrastructure challenges. LLM inference cost varies widely depending on prompt length, model selection, and completion depth. Flat-rate monthly subscriptions frequently fail to align software revenue with real infrastructure expenses. MeterPrompt solves this by decoupling API access credentials from billing logic, giving you granular control over prompt/completion token quotas, credit top-ups, and automated tier switching.
+              </p>
+
+              <p>
+                The platform consists of two integrated components:
+              </p>
+
+              <ul className="list-disc pl-5 space-y-2 text-zinc-700">
+                <li>
+                  <strong>The AI Proxy Gateway:</strong> An OpenAI-compatible reverse proxy hosted at <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">/api/v1/chat/completions</code>. It accepts standard inference requests, verifies developer authorization, forwards requests to models such as GPT-4o, Claude 3.5 Sonnet, or DeepSeek R1, and captures token consumption telemetry before returning the response.
+                </li>
+                <li>
+                  <strong>The Billing & Quota Engine:</strong> A backend service that tracks monthly token consumption per subscription, evaluates credit balances, applies mid-cycle proration credit during plan changes, and automates retry sweeps for failed recurring payments.
+                </li>
+              </ul>
+
+              <p>
+                Whether you are building an enterprise SaaS application, an internal AI developer portal, or a multi-tenant gateway, MeterPrompt ensures your inference pipeline remains cost-effective and predictable.
+              </p>
+
+              <div className="pt-4 border-t border-zinc-200">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSection('first-request')}
+                  className="text-zinc-900 font-bold hover:underline inline-flex items-center gap-1 text-xs cursor-pointer"
+                >
+                  Ready to start? Follow the step-by-step guide in Making your first request &rarr;
+                </button>
+              </div>
+            </article>
+          )}
+
+          {/* 2. AUTHENTICATION */}
+          {activeSection === 'auth' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Authentication</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                MeterPrompt uses two distinct authentication mechanisms designed for different operating contexts. Understanding why these mechanisms are separated ensures you configure your applications securely.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Why Two Auth Mechanisms?</h2>
+
+              <p>
+                Interactive web applications used by human developers (such as the MeterPrompt dashboard) rely on short-lived <strong>JSON Web Tokens (JWT)</strong>. JWTs are issued upon username and password verification, stored in session state, and passed via standard HTTP Bearer headers. They expire periodically to minimize security risk if a user's browser session is compromised.
+              </p>
+
+              <p>
+                In contrast, backend services, microservices, and client applications performing machine-to-machine inference calls cannot interactively log in to refresh short-lived web sessions. For these automated systems, MeterPrompt issues persistent <strong>API Secret Keys</strong> prefixed with <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">mp_live_</code>.
+              </p>
+
+              <CodeBlock
+                id="auth-snippets"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/auth/login \\
   -H "Content-Type: application/json" \\
   -d '{
     "email": "developer@meterprompt.io",
-    "password": "SecurePassword123!"
+    "password": "YourPassword123"
   }'`,
-      js: `const response = await fetch('http://localhost:5000/api/auth/login', {
+                  js: `const response = await fetch('http://localhost:5000/api/auth/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     email: 'developer@meterprompt.io',
-    password: 'SecurePassword123!'
+    password: 'YourPassword123'
   })
 });
 
 const data = await response.json();
-console.log('JWT Bearer Token:', data.token);`,
-      python: `import requests
+console.log('JWT Session Token:', data.token);`,
+                  python: `import requests
 
-url = "http://localhost:5000/api/auth/login"
-payload = {
+res = requests.post("http://localhost:5000/api/auth/login", json={
     "email": "developer@meterprompt.io",
-    "password": "SecurePassword123!"
-}
+    "password": "YourPassword123"
+})
+print("Session Token:", res.json()["token"])`
+                }}
+              />
 
-response = requests.post(url, json=payload)
-token = response.json()["token"]
-print("JWT Token:", token)`,
-      openai: `// Create Cryptographic Key Signature
-const res = await fetch('http://localhost:5000/api/keys', {
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Cryptographic Key Hashing</h2>
+
+              <p>
+                To prevent credential leaks in database backups or internal logs, MeterPrompt never stores raw API secret keys. When a secret key is generated, the unhashed secret is displayed to the developer <strong>exactly once</strong>.
+              </p>
+
+              <p>
+                Immediately after display, MeterPrompt computes a cryptographic SHA-256 hash (<code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">crypto.createHash('sha256')</code>) of the secret string and persists only the hash alongside a non-sensitive prefix (e.g. <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">mp_live_8f93...</code>). When an incoming request reaches the proxy gateway, the gateway hashes the inbound token and performs a constant-time lookup against the stored hash index.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Key Rotation & Revocation</h2>
+
+              <p>
+                If an API key is accidentally exposed in client-side code or public version control, revoke it immediately from the Developer Portal or via the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">DELETE /api/keys/:keyId</code> endpoint. Revocation takes effect instantly across all edge gateway instances.
+              </p>
+            </article>
+          )}
+
+          {/* 3. MAKING YOUR FIRST REQUEST */}
+          {activeSection === 'first-request' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Making your first request</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                This step-by-step walkthrough guides you from creating your developer account to sending an OpenAI-compatible inference request through the MeterPrompt gateway.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Step 1: Register and Authenticate</h2>
+              <p>
+                Begin by creating a developer account. Registration returns a JWT session token that authorizes you to manage subscriptions and generate API keys.
+              </p>
+
+              <CodeBlock
+                id="step1-register"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/auth/register \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Jane Developer",
+    "email": "jane@example.com",
+    "password": "SecurePassword123!"
+  }'`,
+                  js: `const res = await fetch('http://localhost:5000/api/auth/register', {
   method: 'POST',
-  headers: { 'Authorization': \`Bearer \${jwtToken}\` }
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: "Jane Developer",
+    email: "jane@example.com",
+    password: "SecurePassword123!"
+  })
 });
-const { key } = await res.json();
-console.log('API Key:', key); // mp_live_...`
-    },
-    completions: {
-      curl: `curl -X POST http://localhost:5000/api/v1/chat/completions \\
-  -H "Authorization: Bearer mp_live_9a82f3c1d4e5f6a7" \\
+const { token } = await res.json();`,
+                  python: `import requests
+
+res = requests.post("http://localhost:5000/api/auth/register", json={
+    "name": "Jane Developer",
+    "email": "jane@example.com",
+    "password": "SecurePassword123!"
+})
+token = res.json()["token"]`
+                }}
+              />
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Step 2: Generate a Secret API Key</h2>
+              <p>
+                Using your session token, request a cryptographic API key. Store the returned secret string in your application's environment configuration.
+              </p>
+
+              <CodeBlock
+                id="step2-key"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/keys \\
+  -H "Authorization: Bearer <your_jwt_token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "Production Service Key" }'`,
+                  js: `const keyRes = await fetch('http://localhost:5000/api/keys', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${token}\`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name: 'Production Service Key' })
+});
+const { key } = await keyRes.json();
+console.log('Secret Key:', key); // mp_live_...`,
+                  python: `import requests
+
+res = requests.post(
+    "http://localhost:5000/api/keys",
+    headers={"Authorization": f"Bearer {token}"},
+    json={"name": "Production Service Key"}
+)
+api_key = res.json()["key"]`
+                }}
+              />
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Step 3: Call the AI Proxy Gateway</h2>
+              <p>
+                Send a chat completion request to <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">/api/v1/chat/completions</code>. Pass your API key in the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">Authorization: Bearer mp_live_...</code> header or <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">x-api-key</code> header.
+              </p>
+
+              <CodeBlock
+                id="step3-proxy"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/v1/chat/completions \\
+  -H "Authorization: Bearer mp_live_your_secret_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
     "messages": [
-      { "role": "system", "content": "You are a metered AI assistant." },
-      { "role": "user", "content": "Explain token billing." }
-    ],
-    "temperature": 0.7
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain metered SaaS billing." }
+    ]
   }'`,
-      js: `const response = await fetch('http://localhost:5000/api/v1/chat/completions', {
+                  js: `const completion = await fetch('http://localhost:5000/api/v1/chat/completions', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer mp_live_9a82f3c1d4e5f6a7',
+    'Authorization': 'Bearer mp_live_your_secret_key_here',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
     model: 'gpt-4o',
     messages: [
-      { role: 'system', content: 'You are a metered AI assistant.' },
-      { role: 'user', content: 'Explain token billing.' }
-    ],
-    temperature: 0.7
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Explain metered SaaS billing.' }
+    ]
   })
 });
+const data = await completion.json();
+console.log(data.choices[0].message.content);`,
+                  python: `import requests
 
-const completion = await response.json();
-console.log(completion.choices[0].message.content);`,
-      python: `import requests
+res = requests.post(
+    "http://localhost:5000/api/v1/chat/completions",
+    headers={"Authorization": "Bearer mp_live_your_secret_key_here"},
+    json={
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": "Explain metered SaaS billing."}]
+    }
+)
+print(res.json()["choices"][0]["message"]["content"])`,
+                  openai: `import OpenAI from 'openai';
 
-url = "http://localhost:5000/api/v1/chat/completions"
-headers = {
-    "Authorization": "Bearer mp_live_9a82f3c1d4e5f6a7",
-    "Content-Type": "application/json"
-}
-payload = {
-    "model": "gpt-4o",
-    "messages": [
-        {"role": "system", "content": "You are a metered AI assistant."},
-        {"role": "user", "content": "Explain token billing."}
-    ],
-    "temperature": 0.7
-}
-
-response = requests.post(url, headers=headers, json=payload)
-print(response.json()["choices"][0]["message"]["content"])`,
-      openai: `import OpenAI from 'openai';
-
-// Drop-in Replacement for OpenAI SDK
 const openai = new OpenAI({
   baseURL: 'http://localhost:5000/api/v1',
-  apiKey: 'mp_live_9a82f3c1d4e5f6a7'
+  apiKey: 'mp_live_your_secret_key_here'
 });
 
-const completion = await openai.chat.completions.create({
-  model: 'gpt-4o', // or 'claude-3-5-sonnet', 'deepseek-r1', 'mock-gpt-4o'
-  messages: [{ role: 'user', content: 'Explain token billing.' }]
+const response = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Explain metered SaaS billing.' }]
 });
 
-console.log(completion.choices[0].message.content);`
-    },
-    subscriptions: {
-      curl: `curl -X PUT http://localhost:5000/api/subscriptions/66e3b.../change-plan \\
-  -H "Authorization: Bearer <jwt_token>" \\
+console.log(response.choices[0].message.content);`
+                }}
+              />
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Step 4: Inspect Usage Telemetry</h2>
+              <p>
+                Every successful completion returns an OpenAI-standard <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">usage</code> block containing prompt, completion, and total token counts. MeterPrompt automatically records this consumption to your active subscription's usage ledger.
+              </p>
+            </article>
+          )}
+
+          {/* 4. UNDERSTANDING USAGE & QUOTAS */}
+          {activeSection === 'usage-quotas' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Understanding usage & quotas</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                MeterPrompt uses a token-based metering model to evaluate resource consumption. Every inference request processed by the gateway is converted into prompt and completion token counts before being checked against your subscription's monthly allowance.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">How Tokens Are Counted</h2>
+              <p>
+                When an HTTP payload hits <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">/api/v1/chat/completions</code>, the gateway extracts all text from the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">messages</code> array to compute prompt token length. After the model returns an answer, the generated text length is measured for completion tokens. The sum (<code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">prompt_tokens + completion_tokens</code>) forms the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">total_tokens</code> value.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Billing Cycle Resets</h2>
+              <p>
+                Each subscription defines a billing cycle bounded by <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">currentPeriodStart</code> and <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">currentPeriodEnd</code> dates. Usage queries sum tokens recorded in <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">UsageRecord</code> documents strictly within this timestamp window. When a cycle renews, the timestamp window advances, automatically resetting accumulated usage back to zero.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Quota Boundary & 429 Responses</h2>
+              <p>
+                Before executing an inference call, the gateway calculates current cumulative usage. If the incoming request causes total period tokens to exceed <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">plan.featureLimits.maxTokensPerMonth</code>, the gateway immediately aborts execution and returns an HTTP 429 payload:
+              </p>
+
+              <CodeBlock
+                id="quota-429-snippet"
+                snippets={{
+                  curl: `{
+  "success": false,
+  "message": "Monthly token quota exhausted (100,042 / 100,000 tokens used). Please upgrade your plan tier or top up your balance.",
+  "errorCode": "QUOTA_EXHAUSTED"
+}`
+                }}
+              />
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Checking Quota Programmatically</h2>
+              <p>
+                To monitor real-time usage in your frontend dashboards or backend background jobs, query the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">GET /api/subscriptions/me/usage</code> endpoint.
+              </p>
+
+              <CodeBlock
+                id="usage-endpoint"
+                snippets={{
+                  curl: `curl -X GET http://localhost:5000/api/subscriptions/me/usage \\
+  -H "Authorization: Bearer <your_jwt_token>"`,
+                  js: `const res = await fetch('http://localhost:5000/api/subscriptions/me/usage', {
+  headers: { 'Authorization': \`Bearer \${jwtToken}\` }
+});
+const { data } = await res.json();
+console.log(\`\${data.totalTokensUsed} / \${data.maxTokensPerMonth} tokens (\${data.usagePercentage}%)\`);`,
+                  python: `import requests
+
+res = requests.get(
+    "http://localhost:5000/api/subscriptions/me/usage",
+    headers={"Authorization": f"Bearer {token}"}
+)
+data = res.json()["data"]
+print(f"Usage: {data['usagePercentage']}% ({data['totalTokensUsed']}/{data['maxTokensPerMonth']})")`
+                }}
+              />
+            </article>
+          )}
+
+          {/* 5. PLANS & PRORATION */}
+          {activeSection === 'plans-proration' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Plans & proration</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                Subscriptions in MeterPrompt are governed by dynamic plan tiers. When a customer switches tiers in the middle of a billing period, MeterPrompt calculates proration credits to ensure developers are charged only for the exact days each tier was active.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Proration Accounting Walkthrough</h2>
+
+              <p>
+                Consider a customer subscribed to the <strong>Starter Plan ($19.99/month)</strong> on a 30-day billing cycle. 
+              </p>
+
+              <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-3 font-mono text-xs text-zinc-800">
+                <div><strong>Day 0:</strong> Customer subscribes to Starter ($19.99). Paid in full for 30 days.</div>
+                <div><strong>Day 15:</strong> Customer upgrades to Pro ($49.99/month). 15 days remain in the cycle.</div>
+                <div className="pt-2 border-t border-zinc-200 text-zinc-900">
+                  <div>Unused Starter Credit: $19.99 &times; (15 / 30) = <strong>$10.00 Credit</strong></div>
+                  <div>New Pro Charge (Remaining 15 Days): $49.99 &times; (15 / 30) = <strong>$25.00 Charge</strong></div>
+                  <div className="pt-1 text-zinc-900 font-bold">Net Adjustment Invoice: $25.00 - $10.00 = <strong>$15.00 Due Immediately</strong></div>
+                </div>
+              </div>
+
+              <p>
+                The net adjustment ($15.00) is invoiced immediately, and the remaining $10.00 credit balance is stored under <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">prorationBalanceUSD</code> on the subscription document.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Annual Billing Discount Math</h2>
+              <p>
+                Selecting an <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">annual</code> billing cycle applies a 20% discount on the base price for the entire 12-month tenure:
+              </p>
+              
+              <div className="p-3 bg-zinc-100 border border-zinc-200 rounded font-mono text-xs text-zinc-900">
+                Annual Billed Total = (basePrice &times; 0.80) &times; 12
+              </div>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Executing a Tier Switch via API</h2>
+
+              <CodeBlock
+                id="change-plan-api"
+                snippets={{
+                  curl: `curl -X PUT http://localhost:5000/api/subscriptions/66e3b52a1c.../change-plan \\
+  -H "Authorization: Bearer <your_jwt_token>" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "newPlanId": "66e3a41b2c...",
+    "newPlanId": "66e3a41b2c890123456789ac",
     "billingCycle": "yearly"
   }'`,
-      js: `const response = await fetch('http://localhost:5000/api/subscriptions/66e3b.../change-plan', {
+                  js: `const response = await fetch('http://localhost:5000/api/subscriptions/66e3b52a1c.../change-plan', {
   method: 'PUT',
   headers: {
     'Authorization': \`Bearer \${jwtToken}\`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    newPlanId: '66e3a41b2c...',
-    billingCycle: 'yearly' // 20% annual discount applied: (price * 0.8) * 12
+    newPlanId: '66e3a41b2c890123456789ac',
+    billingCycle: 'yearly'
   })
 });
-
 const result = await response.json();
-console.log('Proration Credit Applied:', result.prorationBalance);`,
-      python: `import requests
+console.log(result);`,
+                  python: `import requests
 
-url = "http://localhost:5000/api/subscriptions/66e3b.../change-plan"
-headers = {
-    "Authorization": f"Bearer {jwt_token}",
-    "Content-Type": "application/json"
-}
-payload = {
-    "newPlanId": "66e3a41b2c...",
-    "billingCycle": "yearly"
-}
+res = requests.put(
+    "http://localhost:5000/api/subscriptions/66e3b52a1c.../change-plan",
+    headers={"Authorization": f"Bearer {token}"},
+    json={"newPlanId": "66e3a41b2c890123456789ac", "billingCycle": "yearly"}
+)
+print(res.json())`
+                }}
+              />
+            </article>
+          )}
 
-res = requests.put(url, headers=headers, json=payload)
-print("Proration Invoice:", res.json())`,
-      openai: `// Dynamic Plan Upgrade with Proration Accounting
-const res = await fetch('/api/subscriptions/current/change-plan', {
-  method: 'PUT',
-  body: JSON.stringify({ newPlanId: 'plan_pro_yearly', billingCycle: 'yearly' })
-});
-console.log('Updated Subscription:', await res.json());`
-    },
-    coupons: {
-      curl: `curl -X POST http://localhost:5000/api/coupons/apply \\
-  -H "Authorization: Bearer <jwt_token>" \\
+          {/* 6. COUPONS */}
+          {activeSection === 'coupons' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Coupons & promotional discounts</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                MeterPrompt includes a promotional discount engine allowing admins to mint coupon codes that reduce subscription invoice amounts.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">The Coupon Lifecycle</h2>
+              <p>
+                Coupons are created with a percentage discount rate, a mandatory expiration date (<code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">validTill</code>), and a maximum redemption limit (<code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">maxRedemptions</code>). 
+              </p>
+
+              <p>
+                When a developer submits a coupon code during checkout or plan switching, MeterPrompt converts the code to uppercase, verifies that the code is active, confirms that <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">timesRedeemed &lt; maxRedemptions</code>, and validates that current time has not passed <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">validTill</code>. Upon validation, the percentage discount is applied to the checkout invoice.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Applying a Coupon Code</h2>
+
+              <CodeBlock
+                id="apply-coupon-api"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/coupons/apply \\
+  -H "Authorization: Bearer <your_jwt_token>" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "code": "BUILDWITHAI20"
-  }'`,
-      js: `const response = await fetch('http://localhost:5000/api/coupons/apply', {
+  -d '{ "code": "BUILDWITHAI20" }'`,
+                  js: `const res = await fetch('http://localhost:5000/api/coupons/apply', {
   method: 'POST',
   headers: {
     'Authorization': \`Bearer \${jwtToken}\`,
@@ -269,880 +632,365 @@ console.log('Updated Subscription:', await res.json());`
   },
   body: JSON.stringify({ code: 'BUILDWITHAI20' })
 });
+const data = await res.json();
+console.log('Discount Applied:', data.discountPercent);`,
+                  python: `import requests
 
-const coupon = await response.json();
-console.log(\`Applied \${coupon.discountPercent}% OFF\`);`,
-      python: `import requests
+res = requests.post(
+    "http://localhost:5000/api/coupons/apply",
+    headers={"Authorization": f"Bearer {token}"},
+    json={"code": "BUILDWITHAI20"}
+)
+print(res.json())`
+                }}
+              />
+            </article>
+          )}
 
-url = "http://localhost:5000/api/coupons/apply"
-headers = {"Authorization": f"Bearer {jwt_token}"}
-payload = {"code": "BUILDWITHAI20"}
+          {/* 7. HANDLING FAILED PAYMENTS (DUNNING) */}
+          {activeSection === 'dunning' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Handling failed payments (dunning)</h1>
 
-res = requests.post(url, headers=headers, json=payload)
-print(res.json())`,
-      openai: `// Apply Promotional Coupon Code
-const coupon = await fetch('/api/coupons/apply', {
-  method: 'POST',
-  body: JSON.stringify({ code: 'BUILDWITHAI20' })
-}).then(r => r.json());
-console.log('Discount applied:', coupon);`
-    },
-    dunning: {
-      curl: `curl -X POST http://localhost:5000/api/billing/retry-failed \\
-  -H "Authorization: Bearer <admin_jwt_token>" \\
-  -H "Content-Type: application/json"`,
-      js: `const response = await fetch('http://localhost:5000/api/billing/retry-failed', {
+              <p className="text-base text-zinc-700 leading-relaxed">
+                When a recurring subscription renewal payment fails (due to insufficient funds, expired cards, or bank declines), MeterPrompt executes an automated 3-strike dunning lifecycle to recover revenue without abruptly terminating developer access.
+              </p>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">The 3-Attempt Dunning Timeline</h2>
+
+              <div className="space-y-4 pt-2">
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-xs">Attempt 1 (Immediate Failure)</h4>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    The initial payment fails. The invoice status updates to <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1 py-0.5 rounded">failed</code>, <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1 py-0.5 rounded">paymentAttempts</code> increments to 1, and the subscription status transitions to <code className="font-mono text-xs bg-amber-50 border border-amber-200 text-amber-800 px-1 py-0.5 rounded">grace_period</code>. The developer maintains full AI gateway proxy access.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-xs">Attempt 2 (+48 Hours)</h4>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    An automated background sweep retries settlement. If it fails again, <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1 py-0.5 rounded">paymentAttempts</code> increments to 2, and an urgent payment notification banner appears on the developer dashboard.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <h4 className="font-bold text-zinc-900 text-xs">Attempt 3 (+96 Hours)</h4>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    The final retry attempt occurs. Upon 3rd consecutive failure, the subscription status is marked <code className="font-mono text-xs bg-rose-50 border border-rose-200 text-rose-800 px-1 py-0.5 rounded">past_due</code> or <code className="font-mono text-xs bg-rose-50 border border-rose-200 text-rose-800 px-1 py-0.5 rounded">canceled</code>. API keys associated with the account are restricted from completing further gateway requests.
+                  </p>
+                </div>
+              </div>
+
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Triggering Admin Dunning Sweeps</h2>
+
+              <p>
+                Billing administrators can manually trigger a platform-wide dunning retry sweep using the <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">POST /api/billing/retry-failed</code> endpoint.
+              </p>
+
+              <CodeBlock
+                id="dunning-api"
+                snippets={{
+                  curl: `curl -X POST http://localhost:5000/api/billing/retry-failed \\
+  -H "Authorization: Bearer <admin_jwt_token>"`,
+                  js: `const res = await fetch('http://localhost:5000/api/billing/retry-failed', {
   method: 'POST',
   headers: { 'Authorization': \`Bearer \${adminJwtToken}\` }
 });
+const summary = await res.json();
+console.log('Dunning Sweep Summary:', summary);`,
+                  python: `import requests
 
-const dunningReport = await response.json();
-console.log('Dunning Sweep Summary:', dunningReport);`,
-      python: `import requests
+res = requests.post(
+    "http://localhost:5000/api/billing/retry-failed",
+    headers={"Authorization": f"Bearer {admin_jwt}"}
+)
+print("Sweep Summary:", res.json())`
+                }}
+              />
+            </article>
+          )}
 
-url = "http://localhost:5000/api/billing/retry-failed"
-headers = {"Authorization": f"Bearer {admin_jwt_token}"}
+          {/* 8. ERRORS */}
+          {activeSection === 'errors' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">Errors & status codes</h1>
 
-res = requests.post(url, headers=headers)
-print("Dunning Sweep Results:", res.json())`,
-      openai: `// Trigger Admin Dunning Retry Sweep
-const report = await fetch('/api/billing/retry-failed', {
-  method: 'POST',
-  headers: { 'Authorization': \`Bearer \${adminJwt}\` }
-}).then(r => r.json());
-console.log('Sweep results:', report);`
-    },
-    errors: {
-      curl: `curl -X POST http://localhost:5000/api/v1/chat/completions \\
-  -H "Authorization: Bearer invalid_key_123" \\
-  -H "Content-Type: application/json"`,
-      js: `try {
-  const res = await fetch('/api/protected-route');
-  if (!res.ok) {
-    const errorEnvelope = await res.json();
-    console.error(\`[\${errorEnvelope.errorCode}]: \${errorEnvelope.message}\`);
-  }
-} catch (err) {
-  console.error('Network Error:', err);
-}`,
-      python: `import requests
+              <p className="text-base text-zinc-700 leading-relaxed">
+                MeterPrompt uses standard HTTP response codes and a centralized JSON error envelope to communicate failure conditions. Every error response includes a human-readable <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">message</code> and a machine-readable <code className="font-mono text-xs bg-zinc-100 border border-zinc-200 px-1.5 py-0.5 rounded">errorCode</code>.
+              </p>
 
-res = requests.get("http://localhost:5000/api/protected-route")
-if not res.ok:
-    err = res.json()
-    print(f"Error ({err['errorCode']}): {err['message']}")`,
-      openai: `// Standard AppError Catch Block
-try {
-  await openai.chat.completions.create({ ... });
-} catch (error) {
-  console.log('Status Code:', error.status); // 401, 403, 429
-  console.log('Error Code:', error.error.errorCode);
-}`
-    }
-  };
-
-  // Response Inspection Mapping
-  const responsePayloads = {
-    quickstart: {
-      '200': `{
-  "success": true,
-  "count": 3,
-  "data": [
-    {
-      "_id": "66e3a41b2c890123456789ab",
-      "name": "Starter",
-      "priceUSD": 19.99,
-      "priceINR": 1599,
-      "billingCycle": "monthly",
-      "featureLimits": {
-        "maxRequestsPerMinute": 60,
-        "maxTokensPerMonth": 100000,
-        "allowedModels": ["gpt-4o", "gpt-4o-mini"]
-      }
-    },
-    {
-      "_id": "66e3a41b2c890123456789ac",
-      "name": "Pro",
-      "priceUSD": 49.99,
-      "priceINR": 3999,
-      "billingCycle": "monthly",
-      "featureLimits": {
-        "maxRequestsPerMinute": 180,
-        "maxTokensPerMonth": 500000,
-        "allowedModels": ["gpt-4o", "claude-3-5-sonnet", "deepseek-r1", "gpt-4o-mini"]
-      }
-    }
-  ]
-}`,
-      '400': `{
+              <CodeBlock
+                id="error-envelope"
+                snippets={{
+                  curl: `{
   "success": false,
-  "message": "Invalid request parameter: 'billingCycle' must be 'monthly' or 'yearly'",
-  "errorCode": "INPUT_VALIDATION_FAILED"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Authentication token expired or invalid",
-  "errorCode": "INVALID_TOKEN"
-}`
-    },
-    auth: {
-      '200': `{
-  "success": true,
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "66e3b52a1c...",
-    "name": "Developer User",
-    "email": "developer@meterprompt.io",
-    "role": "customer",
-    "creditsBalanceUSD": 25.00
-  }
-}`,
-      '400': `{
-  "success": false,
-  "message": "Valid email address is required; Password must be at least 6 characters",
-  "errorCode": "INPUT_VALIDATION_FAILED"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Invalid credentials provided",
-  "errorCode": "INVALID_CREDENTIALS"
-}`
-    },
-    completions: {
-      '200': `{
-  "id": "chatcmpl-mp_9a82f3c1d4e5f6a7",
-  "object": "chat.completion",
-  "created": 1725830400,
-  "model": "gpt-4o",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Metered SaaS billing charges dynamically based on exact prompt and completion token counts consumed during execution."
-      },
-      "finish_reason": "stop"
-    }
-  ],
-  "usage": {
-    "prompt_tokens": 18,
-    "completion_tokens": 24,
-    "total_tokens": 42
-  }
-}`,
-      '400': `{
-  "success": false,
-  "message": "Field 'messages' is required and must be a non-empty array",
-  "errorCode": "INPUT_VALIDATION_FAILED"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Invalid API Key format or key has been revoked. Ensure header is x-api-key: mp_live_...",
-  "errorCode": "INVALID_TOKEN"
-}`
-    },
-    subscriptions: {
-      '200': `{
-  "success": true,
-  "message": "Subscription updated to Pro (yearly) with proration credit",
-  "data": {
-    "subscriptionId": "66e3b91a...",
-    "status": "active",
-    "plan": "Pro",
-    "billingCycle": "yearly",
-    "prorationCreditUSD": 14.50,
-    "chargedLumpSumUSD": 479.88,
-    "currentPeriodEnd": "2027-09-09T23:00:00.000Z"
-  }
-}`,
-      '400': `{
-  "success": false,
-  "message": "Target plan '66e3a...' is already active on this subscription",
-  "errorCode": "DUPLICATE_PLAN_CHANGE"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Unauthorized access to subscription resource",
-  "errorCode": "FORBIDDEN_ROLE_ACCESS"
-}`
-    },
-    coupons: {
-      '200': `{
-  "success": true,
-  "message": "Promotional coupon BUILDWITHAI20 applied successfully",
-  "code": "BUILDWITHAI20",
-  "discountPercent": 20,
-  "originalPriceUSD": 49.99,
-  "discountedPriceUSD": 39.99
-}`,
-      '400': `{
-  "success": false,
-  "message": "Promotional coupon 'EXPIRED2025' has reached its maximum redemption cap",
-  "errorCode": "COUPON_CAP_EXCEEDED"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Authentication required to redeem coupons",
-  "errorCode": "INVALID_TOKEN"
-}`
-    },
-    dunning: {
-      '200': `{
-  "success": true,
-  "message": "Dunning auto-retry sweep executed across past_due accounts",
-  "summary": {
-    "totalEvaluated": 12,
-    "successfulSettlements": 8,
-    "retriesIncremented": 3,
-    "suspendedAccounts": 1
-  }
-}`,
-      '400': `{
-  "success": false,
-  "message": "Invalid dunning parameters",
-  "errorCode": "INVALID_SWEEP_REQUEST"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Access denied. Requires 'admin' billing ops role.",
-  "errorCode": "FORBIDDEN_ROLE_ACCESS"
-}`
-    },
-    errors: {
-      '200': `{
-  "success": true,
-  "status": "healthy",
-  "environment": "production",
-  "timestamp": "2026-09-09T23:00:00.000Z"
-}`,
-      '400': `{
-  "success": false,
-  "message": "Detailed human-readable error description",
+  "message": "Human-readable error description",
   "errorCode": "STANDARD_SNAKE_CASE_CODE"
-}`,
-      '401': `{
-  "success": false,
-  "message": "Access denied. Requires 'admin' role.",
-  "errorCode": "FORBIDDEN_ROLE_ACCESS"
 }`
-    }
-  };
+                }}
+              />
 
-  const filteredDocSections = docSections.map(sec => ({
-    ...sec,
-    items: sec.items.filter(item => 
-      item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sec.group.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  })).filter(sec => sec.items.length > 0);
+              <h2 className="text-xl font-bold text-zinc-900 pt-2">Error Reference Guide</h2>
 
-  return (
-    <div className="max-w-7xl mx-auto py-2 space-y-6">
-      {/* 1. PORTAL HEADER BAR */}
-      <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={11} /> Developer Portal
-            </span>
-            <span className="text-xs text-zinc-500">• Production API Gateway & Metering Specs</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-[#1e1f24] mt-1 tracking-tight flex items-center gap-2">
-            MeterPrompt Technical Documentation
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          {/* Mobile View Toggle */}
-          <div className="flex lg:hidden bg-zinc-100 p-1 rounded-xl border border-zinc-200 w-full md:w-auto text-xs font-bold">
-            <button
-              onClick={() => setMobileTab('content')}
-              className={`flex-1 px-3 py-1.5 rounded-lg transition ${mobileTab === 'content' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500'}`}
-            >
-              Docs Content
-            </button>
-            <button
-              onClick={() => setMobileTab('console')}
-              className={`flex-1 px-3 py-1.5 rounded-lg transition ${mobileTab === 'console' ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500'}`}
-            >
-              Code Console
-            </button>
-          </div>
-
-          <div className="hidden md:flex items-center gap-2 text-xs font-mono text-zinc-700 bg-zinc-50 px-3.5 py-2 rounded-xl border border-zinc-200">
-            <Server size={14} className="text-[#5865f2]" />
-            <span className="text-zinc-500">Gateway Root:</span>
-            <strong className="text-zinc-900">http://localhost:5000/api</strong>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. THREE-COLUMN RESPONSIVE WORKSPACE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* COLUMN 1: STICKY NAVIGATION INDEX (3 cols) */}
-        <div className="lg:col-span-3 bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm sticky top-20 space-y-4">
-          {/* Search Bar with Keyboard Tooltip */}
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-3 text-zinc-400" />
-            <input
-              id="docs-search-input"
-              type="text"
-              placeholder="Search docs & APIs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-14 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-900 placeholder-zinc-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#5865f2] transition-all font-medium"
-            />
-            <span className="absolute right-2.5 top-2.5 text-[10px] font-mono text-zinc-400 bg-zinc-200/60 px-1.5 py-0.5 rounded border border-zinc-300">
-              ⌘K
-            </span>
-          </div>
-
-          {/* Nav Categories */}
-          <div className="space-y-4 max-h-[calc(100vh-14rem)] overflow-y-auto pr-1">
-            {filteredDocSections.map((sec, i) => (
-              <div key={i} className="space-y-1">
-                <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 px-2 py-1">
-                  {sec.group}
-                </h4>
-                <div className="space-y-0.5">
-                  {sec.items.map((item) => {
-                    const isSelected = activeSection === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleSelectSection(item.id)}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#5865f2] text-white shadow-xs'
-                            : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 truncate">
-                          {item.method && (
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase font-black ${
-                              isSelected
-                                ? 'bg-white/20 text-white'
-                                : item.method === 'POST' ? 'bg-emerald-100 text-emerald-700'
-                                : item.method === 'PUT' ? 'bg-amber-100 text-amber-700'
-                                : 'bg-blue-100 text-blue-700'
-                            }`}>
-                              {item.method}
-                            </span>
-                          )}
-                          <span className="truncate">{item.label}</span>
-                        </span>
-                        {item.status && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500'
-                          }`}>
-                            {item.status}
-                          </span>
-                        )}
-                        {item.badge && (
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-extrabold ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
-                          }`}>
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* COLUMN 2: MIDDLE CONTENT & PARAMETER DEFINITIONS (5 cols) */}
-        <div className={`lg:col-span-5 space-y-6 ${mobileTab === 'console' ? 'hidden lg:block' : 'block'}`}>
-          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-6 min-h-[600px]">
-            
-            {/* QUICKSTART SECTION */}
-            {activeSection === 'quickstart' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">
-                    Core Overview
-                  </span>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Quickstart & Base URLs
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-2 leading-relaxed font-medium">
-                    MeterPrompt operates as a dual-layer platform: a high-throughput <strong>OpenAI-compatible AI Proxy Gateway</strong> (`/api/v1/chat/completions`) paired with a <strong>Stripe-style SaaS Billing Engine</strong>.
+              <div className="space-y-4 pt-2">
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">INPUT_VALIDATION_FAILED</span>
+                    <span className="font-mono text-xs text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded">HTTP 400</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when request body parameters fail validation checks (e.g., missing required fields, invalid email format, or passwords shorter than 6 characters).
+                    <br />
+                    <em>Guidance: Inspect the returned error message array and correct client payload formatting before retrying.</em>
                   </p>
                 </div>
 
-                <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2">
-                  <h4 className="font-extrabold text-zinc-900 text-xs flex items-center gap-1.5">
-                    <Server size={14} className="text-[#5865f2]" /> Base Environment Endpoints
-                  </h4>
-                  <ul className="space-y-1.5 font-mono text-[11px]">
-                    <li className="flex justify-between border-b border-zinc-200/60 pb-1">
-                      <span className="text-zinc-500">API Gateway Proxy:</span>
-                      <strong className="text-zinc-900">http://localhost:5000/api/v1</strong>
-                    </li>
-                    <li className="flex justify-between border-b border-zinc-200/60 pb-1">
-                      <span className="text-zinc-500">Billing & Auth Engine:</span>
-                      <strong className="text-zinc-900">http://localhost:5000/api</strong>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-zinc-500">Vite Developer Console:</span>
-                      <strong className="text-zinc-900">http://localhost:3000</strong>
-                    </li>
-                  </ul>
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">INVALID_TOKEN / INVALID_API_KEY</span>
+                    <span className="font-mono text-xs text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded">HTTP 401</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when an HTTP request lacks an Authorization header, contains an expired JWT token, or passes a revoked API key string.
+                    <br />
+                    <em>Guidance: Verify that your <code className="font-mono">Authorization: Bearer ...</code> header is correctly formatted or generate a new secret API key in the portal.</em>
+                  </p>
                 </div>
 
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">FORBIDDEN_ROLE_ACCESS</span>
+                    <span className="font-mono text-xs text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded">HTTP 403</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when a user authenticated with role <code className="font-mono">customer</code> attempts to call administrative routes (such as creating plans or minting coupons).
+                    <br />
+                    <em>Guidance: Authenticate with an administrative account or request elevated role permissions.</em>
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">ENDPOINT_NOT_FOUND</span>
+                    <span className="font-mono text-xs text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded">HTTP 404</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when an inbound request hits an unmapped URI path on the server gateway.
+                    <br />
+                    <em>Guidance: Check the endpoint path against the API Reference section.</em>
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">QUOTA_EXHAUSTED</span>
+                    <span className="font-mono text-xs text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded">HTTP 429</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when the subscription's accumulated monthly token usage reaches its plan limit.
+                    <br />
+                    <em>Guidance: Upgrade your subscription tier or wait for the monthly billing cycle reset.</em>
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white border border-zinc-200 rounded-lg space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-zinc-900">INTERNAL_SERVER_ERROR</span>
+                    <span className="font-mono text-xs text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded">HTTP 500</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 leading-relaxed">
+                    Fired when an unhandled server exception or database connectivity issue occurs.
+                    <br />
+                    <em>Guidance: Retry the request with exponential backoff. If issues persist, check server logs.</em>
+                  </p>
+                </div>
+              </div>
+            </article>
+          )}
+
+          {/* 9. API REFERENCE */}
+          {activeSection === 'api-reference' && (
+            <article className="space-y-6 text-zinc-800 leading-relaxed text-sm">
+              <h1 className="text-3xl font-extrabold text-zinc-900 tracking-tight">API reference</h1>
+
+              <p className="text-base text-zinc-700 leading-relaxed">
+                Complete technical specification for all REST API endpoints exposed by the MeterPrompt platform.
+              </p>
+
+              <div className="space-y-6 border-t border-zinc-200 pt-4">
+                
+                {/* Auth Endpoints */}
                 <div className="space-y-3">
-                  <h3 className="font-extrabold text-sm text-zinc-900">Platform Features Matrix</h3>
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
+                  <h2 className="text-lg font-bold text-zinc-900">Authentication Endpoints</h2>
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden text-xs">
                     <table className="w-full text-left border-collapse">
-                      <thead className="bg-zinc-50 text-zinc-500 font-bold uppercase text-[10px] border-b border-zinc-200">
+                      <thead className="bg-zinc-50 text-zinc-500 font-semibold border-b border-zinc-200 uppercase text-[10px]">
                         <tr>
-                          <th className="p-3">Feature Component</th>
-                          <th className="p-3">Syllabus Module</th>
-                          <th className="p-3 text-right">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-200 text-xs">
-                        <tr>
-                          <td className="p-3 font-bold text-zinc-900">JWT & SHA-256 Auth</td>
-                          <td className="p-3 text-zinc-600">Module 1 & RBAC</td>
-                          <td className="p-3 text-right font-bold text-emerald-600">Ready</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-zinc-900">Token Proxy Gateway</td>
-                          <td className="p-3 text-zinc-600">Module 5 Usage Metering</td>
-                          <td className="p-3 text-right font-bold text-emerald-600">Ready</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-zinc-900">Mid-Cycle Proration</td>
-                          <td className="p-3 text-zinc-600">Module 4 Plan Switch</td>
-                          <td className="p-3 text-right font-bold text-emerald-600">Ready</td>
-                        </tr>
-                        <tr>
-                          <td className="p-3 font-bold text-zinc-900">Dunning 3-Sweep Engine</td>
-                          <td className="p-3 text-zinc-600">Module 11 Failure Recovery</td>
-                          <td className="p-3 text-right font-bold text-emerald-600">Ready</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* AUTHENTICATION & KEYS SECTION */}
-            {activeSection === 'auth' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">
-                    Security Layer
-                  </span>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Authentication & Cryptographic Keys
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-2 leading-relaxed font-medium">
-                    MeterPrompt uses two distinct authentication mechanisms depending on the route guard:
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-1.5">
-                    <div className="font-extrabold text-zinc-900 text-xs flex items-center gap-1.5">
-                      <Lock size={14} className="text-[#5865f2]" /> 1. User Dashboard Sessions (JWT)
-                    </div>
-                    <p className="text-xs text-zinc-600 leading-relaxed">
-                      All standard portal endpoints (`/api/subscriptions`, `/api/billing`, `/api/plans`) require a valid JWT Bearer header:
-                    </p>
-                    <div className="bg-zinc-900 text-zinc-200 p-2.5 rounded-lg font-mono text-[11px] mt-2">
-                      <code>Authorization: Bearer &lt;jwt_access_token&gt;</code>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-1.5">
-                    <div className="font-extrabold text-zinc-900 text-xs flex items-center gap-1.5">
-                      <Key size={14} className="text-emerald-600" /> 2. AI Proxy Inferences (API Secret Keys)
-                    </div>
-                    <p className="text-xs text-zinc-600 leading-relaxed">
-                      Inference completion requests (`/api/v1/chat/completions`) accept secret keys with `mp_live_` prefix via either Header or Bearer token:
-                    </p>
-                    <div className="bg-zinc-900 text-zinc-200 p-2.5 rounded-lg font-mono text-[11px] mt-2 space-y-1">
-                      <div><code>Authorization: Bearer mp_live_8f93a17b20e44129</code></div>
-                      <div><code>x-api-key: mp_live_8f93a17b20e44129</code></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
-                  <h4 className="font-extrabold flex items-center gap-1">
-                    <ShieldCheck size={14} className="text-amber-700" /> Cryptographic Key Security Notice
-                  </h4>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Raw API secret keys are displayed <strong>only once</strong> upon creation. Only cryptographic SHA-256 hashes (`crypto.createHash('sha256')`) are stored in MongoDB.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* AI PROXY CHAT COMPLETIONS SECTION */}
-            {activeSection === 'completions' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-emerald-500 text-white font-mono text-[10px] font-black px-2 py-0.5 rounded">
-                      POST
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-zinc-900">
-                      /api/v1/chat/completions
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Token-Metered AI Inference Proxy
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-medium">
-                    OpenAI-compatible chat completion proxy routing requests to `gpt-4o`, `claude-3-5-sonnet`, `deepseek-r1`, or local `mock-gpt-4o`.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className="font-extrabold text-xs text-zinc-900">Request Body Parameters</h3>
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-zinc-50 text-zinc-500 font-bold uppercase text-[10px] border-b border-zinc-200">
-                        <tr>
-                          <th className="p-2.5">Parameter</th>
-                          <th className="p-2.5">Type</th>
-                          <th className="p-2.5">Required</th>
+                          <th className="p-2.5">Method</th>
+                          <th className="p-2.5">Endpoint Path</th>
+                          <th className="p-2.5">Guard</th>
                           <th className="p-2.5">Description</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-200 text-[11px]">
+                      <tbody className="divide-y divide-zinc-200 text-[11px] font-mono">
                         <tr>
-                          <td className="p-2.5 font-mono font-bold text-zinc-900">model</td>
-                          <td className="p-2.5 font-mono text-zinc-500">string</td>
-                          <td className="p-2.5 text-rose-600 font-bold">Required</td>
-                          <td className="p-2.5 text-zinc-700">Target LLM (`gpt-4o`, `claude-3-5-sonnet`, `deepseek-r1`, `mock-gpt-4o`).</td>
+                          <td className="p-2.5 font-bold text-emerald-700">POST</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/auth/register</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Public</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Register new customer or admin account.</td>
                         </tr>
                         <tr>
-                          <td className="p-2.5 font-mono font-bold text-zinc-900">messages</td>
-                          <td className="p-2.5 font-mono text-zinc-500">array</td>
-                          <td className="p-2.5 text-rose-600 font-bold">Required</td>
-                          <td className="p-2.5 text-zinc-700">Array of message objects (e.g. role and content parameters).</td>
+                          <td className="p-2.5 font-bold text-emerald-700">POST</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/auth/login</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Public</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Authenticate credentials and receive JWT.</td>
                         </tr>
                         <tr>
-                          <td className="p-2.5 font-mono font-bold text-zinc-900">temperature</td>
-                          <td className="p-2.5 font-mono text-zinc-500">number</td>
-                          <td className="p-2.5 text-zinc-400">Optional</td>
-                          <td className="p-2.5 text-zinc-700">Sampling temperature (0.0 to 1.0). Defaults to 0.7.</td>
+                          <td className="p-2.5 font-bold text-blue-700">GET</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/auth/me</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Bearer JWT</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Retrieve profile details and credit balance.</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2">
-                  <h4 className="font-extrabold text-zinc-900 text-xs flex items-center gap-1.5">
-                    <Activity size={14} className="text-emerald-600" /> Gateway Response Headers
-                  </h4>
-                  <ul className="space-y-1 font-mono text-[11px] text-zinc-700">
-                    <li><code className="text-primary font-bold">x-meterprompt-tokens-used</code>: Total tokens consumed by prompt & completion.</li>
-                    <li><code className="text-primary font-bold">x-meterprompt-remaining-credits</code>: Remaining account credit balance ($).</li>
-                    <li><code className="text-primary font-bold">x-meterprompt-latency-ms</code>: Edge proxy execution turnaround time (ms).</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* SUBSCRIPTIONS & PRORATION SECTION */}
-            {activeSection === 'subscriptions' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-amber-500 text-white font-mono text-[10px] font-black px-2 py-0.5 rounded">
-                      PUT
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-zinc-900">
-                      /api/subscriptions/:id/change-plan
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Subscription & Proration Engine
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-medium">
-                    Upgrades or downgrades an active subscription tier, computing day-by-day unused time credits and applying annual discount math.
-                  </p>
-                </div>
-
+                {/* API Key Management */}
                 <div className="space-y-3">
-                  <h3 className="font-extrabold text-xs text-zinc-900">Request Parameters</h3>
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
+                  <h2 className="text-lg font-bold text-zinc-900">API Key Management</h2>
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden text-xs">
                     <table className="w-full text-left border-collapse">
-                      <thead className="bg-zinc-50 text-zinc-500 font-bold uppercase text-[10px] border-b border-zinc-200">
+                      <thead className="bg-zinc-50 text-zinc-500 font-semibold border-b border-zinc-200 uppercase text-[10px]">
                         <tr>
-                          <th className="p-2.5">Parameter</th>
-                          <th className="p-2.5">Type</th>
-                          <th className="p-2.5">Required</th>
+                          <th className="p-2.5">Method</th>
+                          <th className="p-2.5">Endpoint Path</th>
+                          <th className="p-2.5">Guard</th>
                           <th className="p-2.5">Description</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-200 text-[11px]">
+                      <tbody className="divide-y divide-zinc-200 text-[11px] font-mono">
                         <tr>
-                          <td className="p-2.5 font-mono font-bold text-zinc-900">newPlanId</td>
-                          <td className="p-2.5 font-mono text-zinc-500">string</td>
-                          <td className="p-2.5 text-rose-600 font-bold">Required</td>
-                          <td className="p-2.5 text-zinc-700">Target MongoDB ObjectId string of target plan tier.</td>
+                          <td className="p-2.5 font-bold text-emerald-700">POST</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/keys</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Bearer JWT</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Generate secret API key (`mp_live_...`).</td>
                         </tr>
                         <tr>
-                          <td className="p-2.5 font-mono font-bold text-zinc-900">billingCycle</td>
-                          <td className="p-2.5 font-mono text-zinc-500">string</td>
-                          <td className="p-2.5 text-rose-600 font-bold">Required</td>
-                          <td className="p-2.5 text-zinc-700">`monthly` or `yearly` / `annual` tenure.</td>
+                          <td className="p-2.5 font-bold text-rose-700">DELETE</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/keys/:keyId</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Bearer JWT</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Revoke an existing API secret key.</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                <div className="p-4 bg-zinc-900 text-zinc-100 rounded-xl space-y-2 font-mono text-[11px]">
-                  <h4 className="font-bold text-xs text-white font-sans flex items-center gap-1.5">
-                    <Zap size={14} className="text-amber-400" /> Business Math Engine
-                  </h4>
-                  <p className="text-zinc-300 font-sans leading-relaxed">
-                    <strong>1. Annual Lump-Sum Discount:</strong> Selecting `yearly` applies a 20% discount on base price for the 12-month lump sum:
-                    <br />
-                    <code className="text-emerald-400 font-mono">Billed Total = (basePrice × 0.80) × 12</code>
-                  </p>
-                  <p className="text-zinc-300 font-sans leading-relaxed">
-                    <strong>2. Mid-Cycle Proration Accounting:</strong> Unused days on the previous plan are credited directly to the new invoice:
-                    <br />
-                    <code className="text-amber-400 font-mono">Credit = OldPrice × (RemainingDays / TotalCycleDays)</code>
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* COUPONS SECTION */}
-            {activeSection === 'coupons' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-emerald-500 text-white font-mono text-[10px] font-black px-2 py-0.5 rounded">
-                      POST
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-zinc-900">
-                      /api/coupons/apply
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Promotional Coupon Validation
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-medium">
-                    Validates promotional discount codes, enforcing expiration dates (`validTill`) and maximum redemption caps.
-                  </p>
-                </div>
-
+                {/* AI Gateway Proxy */}
                 <div className="space-y-3">
-                  <h3 className="font-extrabold text-xs text-zinc-900">Request Schema</h3>
-                  <div className="bg-zinc-900 text-emerald-400 p-3 rounded-xl font-mono text-[11px]">
-                    <pre>{`{
-  "code": "BUILDWITHAI20"
-}`}</pre>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-2">
-                  <h4 className="font-extrabold text-zinc-900 text-xs flex items-center gap-1.5">
-                    <Tag size={14} className="text-[#5865f2]" /> Validation Business Rules
-                  </h4>
-                  <ul className="space-y-1 text-zinc-700 text-[11px]">
-                    <li>• Code lookup is case-insensitive (automatically uppercase normalized).</li>
-                    <li>• Checks <code className="font-mono text-zinc-800 font-bold">timesRedeemed &lt; maxRedemptions</code> to prevent cap exhaustion.</li>
-                    <li>• Verifies <code className="font-mono text-zinc-800 font-bold">new Date() &lt; validTill</code> before applying percentage discount.</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* DUNNING SECTION */}
-            {activeSection === 'dunning' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-purple-600 text-white font-mono text-[10px] font-black px-2 py-0.5 rounded">
-                      POST
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-zinc-900">
-                      /api/billing/retry-failed
-                    </span>
-                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold">Admin Only</span>
-                  </div>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Dunning & Payment Recovery Sweep
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-medium">
-                    Automated 3-strike retry engine sweeping failed invoices every 48 hours before marking subscriptions `past_due` or `suspended`.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-zinc-900 text-zinc-100 rounded-xl space-y-3 font-mono text-[11px]">
-                  <h4 className="font-bold text-xs text-white font-sans flex items-center gap-1.5">
-                    <RefreshCw size={14} className="text-amber-400" /> 3-Strike Escalation Lifecycle
-                  </h4>
-                  <div className="space-y-2 font-sans text-xs">
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
-                      <span className="text-amber-400 font-bold">Attempt 1 (Immediate)</span>
-                      <span className="text-zinc-400">Invoice marked `failed`, initial retry scheduled in 48h.</span>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
-                      <span className="text-amber-400 font-bold">Attempt 2 (+48 Hours)</span>
-                      <span className="text-zinc-400">Second payment attempt; sends email notification.</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-rose-400 font-bold">Attempt 3 (+96 Hours)</span>
-                      <span className="text-zinc-400">Final failure; sets status `past_due` / `suspended`.</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* STANDARDIZED ERROR MATRIX SECTION */}
-            {activeSection === 'errors' && (
-              <div className="space-y-6 text-xs text-zinc-600">
-                <div>
-                  <span className="bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider">
-                    Centralized AppError
-                  </span>
-                  <h2 className="text-2xl font-extrabold text-[#1e1f24] mt-2 tracking-tight">
-                    Central Error Envelope
-                  </h2>
-                  <p className="text-xs text-zinc-600 mt-1 leading-relaxed font-medium">
-                    All failure responses return a uniform JSON error envelope generated by `errorHandler.js`.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <h3 className="font-extrabold text-xs text-zinc-900">HTTP Status Code Specifications</h3>
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden text-xs">
+                  <h2 className="text-lg font-bold text-zinc-900">AI Gateway Proxy</h2>
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden text-xs">
                     <table className="w-full text-left border-collapse">
-                      <thead className="bg-zinc-50 text-zinc-500 font-bold uppercase text-[10px] border-b border-zinc-200">
+                      <thead className="bg-zinc-50 text-zinc-500 font-semibold border-b border-zinc-200 uppercase text-[10px]">
                         <tr>
-                          <th className="p-2.5">Code</th>
-                          <th className="p-2.5">Error Code</th>
-                          <th className="p-2.5">Trigger Condition</th>
+                          <th className="p-2.5">Method</th>
+                          <th className="p-2.5">Endpoint Path</th>
+                          <th className="p-2.5">Guard</th>
+                          <th className="p-2.5">Description</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-200 font-mono text-[11px]">
+                      <tbody className="divide-y divide-zinc-200 text-[11px] font-mono">
                         <tr>
-                          <td className="p-2.5 font-bold text-amber-600">400</td>
-                          <td className="p-2.5 font-bold text-zinc-900">INPUT_VALIDATION_FAILED</td>
-                          <td className="p-2.5 text-zinc-700 font-sans">Payload body validation errors.</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2.5 font-bold text-rose-600">401</td>
-                          <td className="p-2.5 font-bold text-zinc-900">INVALID_TOKEN</td>
-                          <td className="p-2.5 text-zinc-700 font-sans">Missing or invalid JWT / API secret key.</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2.5 font-bold text-rose-600">403</td>
-                          <td className="p-2.5 font-bold text-zinc-900">FORBIDDEN_ROLE_ACCESS</td>
-                          <td className="p-2.5 text-zinc-700 font-sans">Requires `admin` privileges.</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2.5 font-bold text-amber-600">404</td>
-                          <td className="p-2.5 font-bold text-zinc-900">ENDPOINT_NOT_FOUND</td>
-                          <td className="p-2.5 text-zinc-700 font-sans">Invalid endpoint URL requested.</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2.5 font-bold text-rose-600">500</td>
-                          <td className="p-2.5 font-bold text-zinc-900">INTERNAL_SERVER_ERROR</td>
-                          <td className="p-2.5 text-zinc-700 font-sans">Unhandled exception caught by error middleware.</td>
+                          <td className="p-2.5 font-bold text-emerald-700">POST</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/v1/chat/completions</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">API Key</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Metered AI inference proxy endpoint.</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* COLUMN 3: RIGHT STICKY INTERACTIVE CODE CONSOLE (4 cols) */}
-        <div className={`lg:col-span-4 space-y-4 sticky top-20 ${mobileTab === 'content' ? 'hidden lg:block' : 'block'}`}>
-          <div className="bg-[#18181b] border border-zinc-800 rounded-2xl p-4 shadow-xl text-white space-y-4">
-            
-            {/* Request Language Tabs */}
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-[11px] font-bold">
-                {['curl', 'js', 'python', 'openai'].map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setRequestLang(lang)}
-                    className={`px-2.5 py-1 rounded-lg uppercase tracking-wider transition cursor-pointer ${
-                      requestLang === lang
-                        ? 'bg-[#5865f2] text-white font-extrabold'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {lang === 'openai' ? 'SDK' : lang}
-                  </button>
-                ))}
-              </div>
+                {/* Subscription & Billing Endpoints */}
+                <div className="space-y-3">
+                  <h2 className="text-lg font-bold text-zinc-900">Subscriptions & Billing</h2>
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-zinc-50 text-zinc-500 font-semibold border-b border-zinc-200 uppercase text-[10px]">
+                        <tr>
+                          <th className="p-2.5">Method</th>
+                          <th className="p-2.5">Endpoint Path</th>
+                          <th className="p-2.5">Guard</th>
+                          <th className="p-2.5">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200 text-[11px] font-mono">
+                        <tr>
+                          <td className="p-2.5 font-bold text-emerald-700">POST</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/subscriptions</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Customer</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Subscribe customer to a plan tier.</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold text-blue-700">GET</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/subscriptions/me</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Customer</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Fetch active subscription details.</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold text-blue-700">GET</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/subscriptions/me/usage</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Customer</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Fetch current period token usage & quota.</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold text-amber-700">PUT</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/subscriptions/:id/change-plan</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Customer</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Upgrade/downgrade plan with proration.</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2.5 font-bold text-amber-700">PUT</td>
+                          <td className="p-2.5 font-bold text-zinc-900">/api/subscriptions/:id/cancel</td>
+                          <td className="p-2.5 text-zinc-500 font-sans">Customer</td>
+                          <td className="p-2.5 text-zinc-700 font-sans">Schedule cancellation at period end.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
+              </div>
+            </article>
+          )}
+
+          {/* BOTTOM SIMPLE PREV / NEXT PAGER */}
+          <div className="mt-12 pt-6 border-t border-zinc-200 flex items-center justify-between text-xs">
+            {prevPage ? (
               <button
-                onClick={() => copyToClipboard(codeSnippets[activeSection]?.[requestLang] || '')}
-                className="text-xs font-bold text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer bg-zinc-900 px-2.5 py-1.5 rounded-lg border border-zinc-800"
+                type="button"
+                onClick={() => handleSelectSection(prevPage.id)}
+                className="text-zinc-600 hover:text-zinc-900 font-medium inline-flex items-center gap-1 cursor-pointer"
               >
-                {copiedSnippet ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                {copiedSnippet ? 'Copied' : 'Copy'}
+                <ChevronLeft size={14} />
+                <span>{prevPage.title}</span>
               </button>
-            </div>
+            ) : <div />}
 
-            {/* Request Snippet Body */}
-            <div className="font-mono text-[11px] leading-relaxed text-emerald-400 bg-zinc-950 p-4 rounded-xl overflow-x-auto border border-zinc-900 max-h-[300px]">
-              <pre>{codeSnippets[activeSection]?.[requestLang] || '// Code snippet not available'}</pre>
-            </div>
-
-            {/* Response Inspector Header & Status Switcher */}
-            <div className="pt-2 border-t border-zinc-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <Terminal size={13} className="text-[#5865f2]" /> Response Inspector
-                </span>
-                <div className="flex gap-1">
-                  {['200', '400', '401'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => setResponseTab(status)}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold cursor-pointer transition ${
-                        responseTab === status
-                          ? status === '200' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : status === '400' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                            : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                          : 'text-zinc-500 hover:text-zinc-300'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Response Inspector Payload Output */}
-              <div className="font-mono text-[11px] leading-relaxed bg-zinc-950 p-4 rounded-xl overflow-x-auto border border-zinc-900 max-h-[280px]">
-                <pre className={
-                  responseTab === '200' ? 'text-zinc-200' : responseTab === '400' ? 'text-amber-300' : 'text-rose-400'
-                }>
-                  {responsePayloads[activeSection]?.[responseTab] || '{}'}
-                </pre>
-              </div>
-            </div>
-
+            {nextPage ? (
+              <button
+                type="button"
+                onClick={() => handleSelectSection(nextPage.id)}
+                className="text-zinc-600 hover:text-zinc-900 font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>{nextPage.title}</span>
+                <ChevronRight size={14} />
+              </button>
+            ) : <div />}
           </div>
-        </div>
 
+        </main>
       </div>
     </div>
   );

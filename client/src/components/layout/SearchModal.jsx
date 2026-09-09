@@ -1,19 +1,38 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, ArrowRight, Home, Key, CreditCard, FileText, Layers } from 'lucide-react';
+import { Search, X, ArrowRight, Home, Key, CreditCard, FileText, Layers, Users, RefreshCw, Activity, Tag, ShieldCheck } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SearchModal({ isOpen, onClose, setCurrentRoute, navigateToConsole }) {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
 
-  const searchItems = [
-    { name: 'Developer Console Overview', route: 'console-overview', icon: Home },
-    { name: 'API Secret Keys', route: 'console-keys', icon: Key },
-    { name: 'Credits & Billing', route: 'console-credits', icon: CreditCard },
-    { name: 'Inference Logs', route: 'console-logs', icon: FileText },
-    { name: 'Models & Pricing Catalog', route: 'pricing', icon: Layers }
-  ].filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const customerSearchItems = [
+    { name: 'Developer Console Overview', route: 'console-overview', icon: Home, category: 'Console' },
+    { name: 'API Secret Keys & Management', route: 'console-keys', icon: Key, category: 'Security' },
+    { name: 'Credits & Billing Portal', route: 'console-credits', icon: CreditCard, category: 'Billing' },
+    { name: 'Inference Logs & Telemetry', route: 'console-logs', icon: FileText, category: 'Logs' },
+    { name: 'Models & Pricing Catalog', route: 'pricing', icon: Layers, category: 'Catalog' },
+    { name: 'Developer Documentation', route: 'docs', icon: FileText, category: 'Docs' }
+  ];
+
+  const adminSearchItems = [
+    { name: 'Admin Revenue & Churn (MRR)', route: 'console-admin-overview', icon: Activity, category: 'Admin Analytics' },
+    { name: 'User Directory & Drilldown', route: 'console-admin-users', icon: Users, category: 'Admin Users' },
+    { name: 'Subscription Plans CRUD', route: 'console-admin-plans', icon: Layers, category: 'Admin Plans' },
+    { name: 'Promotions & Coupon Management', route: 'console-admin-coupons', icon: Tag, category: 'Admin Billing' },
+    { name: 'Dunning & Payment Recovery', route: 'console-admin-dunning', icon: RefreshCw, category: 'Admin Recovery' },
+    { name: 'Billing Events Stream', route: 'console-admin-events', icon: ShieldCheck, category: 'Admin Events' },
+    ...customerSearchItems
+  ];
+
+  const searchItems = (user?.role === 'admin' ? adminSearchItems : customerSearchItems)
+    .filter(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-20">
@@ -47,7 +66,7 @@ export default function SearchModal({ isOpen, onClose, setCurrentRoute, navigate
                 key={idx}
                 onClick={() => {
                   if (item.route.startsWith('console-')) {
-                    navigateToConsole(item.route.replace('console-', ''));
+                    navigateToConsole(item.route);
                   } else {
                     setCurrentRoute(item.route);
                   }

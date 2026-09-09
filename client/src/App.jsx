@@ -113,9 +113,7 @@ function AppContent() {
     }
 
     if (user) {
-      if (user.role === 'admin' && isConsoleRoute && !currentRoute.startsWith('console-admin-')) {
-        setCurrentRoute('console-admin-overview');
-      } else if (user.role !== 'admin' && currentRoute.startsWith('console-admin-')) {
+      if (user.role !== 'admin' && currentRoute.startsWith('console-admin-')) {
         setCurrentRoute('console-overview');
       }
     }
@@ -128,10 +126,17 @@ function AppContent() {
       showNotification('info', 'Authentication required to access Developer Console.');
       return;
     }
+    
+    // Allow admins to navigate to any console route (both admin-specific and general developer routes)
+    const targetRoute = subRoute.startsWith('console-') ? subRoute : `console-${subRoute}`;
     if (user.role === 'admin') {
-      setCurrentRoute(subRoute.startsWith('admin-') ? `console-${subRoute}` : 'console-admin-overview');
+      setCurrentRoute(targetRoute);
     } else {
-      setCurrentRoute(`console-${subRoute}`);
+      if (targetRoute.startsWith('console-admin-')) {
+        setCurrentRoute('console-overview');
+      } else {
+        setCurrentRoute(targetRoute);
+      }
     }
   };
 
