@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { Zap } from "lucide-react";
+import { Zap, AlertTriangle, Trash2, ShieldAlert } from "lucide-react";
 import apiClient from "../../services/apiClient";
 
 export default function ConfirmModal({ 
@@ -10,6 +10,7 @@ export default function ConfirmModal({
   confirmText = "Confirm", 
   cancelText = "Cancel", 
   showCouponInput = false,
+  variant = "primary", // "primary" | "destructive"
   onConfirm, 
   onCancel, 
   isLoading 
@@ -41,7 +42,7 @@ export default function ConfirmModal({
   };
 
   const couponApplied = Boolean(appliedCoupon);
-
+  const isDestructive = variant === "destructive";
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -54,8 +55,10 @@ export default function ConfirmModal({
       {/* Modal Surface */}
       <div className="relative z-10 bg-white border border-zinc-200 rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-150 space-y-4">
         <div className="flex items-center gap-3 border-b border-zinc-100 pb-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
-            <Zap size={18} />
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold shrink-0 ${
+            isDestructive ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-primary/10 text-primary'
+          }`}>
+            {isDestructive ? <AlertTriangle size={18} /> : <Zap size={18} />}
           </div>
           <h3 className="text-base font-extrabold text-zinc-900 leading-tight">{title}</h3>
         </div>
@@ -124,7 +127,11 @@ export default function ConfirmModal({
             type="button"
             onClick={() => onConfirm(appliedCoupon)}
             disabled={isLoading}
-            className="inline-flex items-center justify-center whitespace-nowrap px-5 py-2 text-xs font-semibold text-white bg-[#5865f2] hover:bg-[#4752c4] rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            className={`inline-flex items-center justify-center whitespace-nowrap px-5 py-2 text-xs font-bold text-white rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50 ${
+              isDestructive 
+                ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' 
+                : 'bg-[#5865f2] hover:bg-[#4752c4] shadow-[#5865f2]/20'
+            }`}
           >
             {isLoading ? (
               <span className="inline-flex items-center gap-2">
@@ -135,11 +142,10 @@ export default function ConfirmModal({
                 <span>Processing...</span>
               </span>
             ) : (
-              confirmText || 'Confirm Tier Switch'
+              confirmText || 'Confirm'
             )}
           </button>
         </div>
-
       </div>
     </div>,
     document.body

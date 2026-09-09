@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import { Plus, Edit2, Trash2, CheckCircle2, Zap } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 export default function AdminPlans() {
   const { showNotification } = useAuth();
@@ -13,6 +14,10 @@ export default function AdminPlans() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Confirm Deactivate Modal State
+  const [deactivatePlanTarget, setDeactivatePlanTarget] = useState(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -56,6 +61,27 @@ export default function AdminPlans() {
       allowedModels: 'gpt-4o, gpt-4o-mini'
     });
     setIsModalOpen(true);
+  };
+
+  const handleDeactivateClick = (plan) => {
+    setDeactivatePlanTarget(plan);
+  };
+
+  const executeDeactivate = async () => {
+    if (!deactivatePlanTarget) return;
+    setIsDeactivating(true);
+    try {
+      const res = await apiClient.delete(`/plans/${deactivatePlanTarget._id}`);
+      if (res.success) {
+        showNotification('success', `Plan '${deactivatePlanTarget.name}' deactivated successfully.`);
+        await fetchPlans();
+      }
+    } catch (err) {
+      showNotification('error', err.message || 'Failed to deactivate plan.');
+    } finally {
+      setIsDeactivating(false);
+      setDeactivatePlanTarget(null);
+    }
   };
 
   const openEditModal = (p) => {
@@ -195,7 +221,7 @@ export default function AdminPlans() {
                       <Edit2 size={14} />
                     </button>
                     <button
-                      onClick={() => handleDeactivate(p._id || p.id, p.name)}
+                      onClick={() => handleDeactivateClick(p)}
                       className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg cursor-pointer"
                       title="Deactivate Tier"
                     >
@@ -208,6 +234,19 @@ export default function AdminPlans() {
           </table>
         </div>
       </div>
+
+      {/* CONFIRM DEACTIVATE MODAL */}
+      <ConfirmModal
+        isOpen={Boolean(deactivatePlanTarget)}
+        title={`Deactivate Plan '${deactivatePlanTarget?.name}'?`}
+        message={`Are you sure you want to deactivate the '${deactivatePlanTarget?.name}' plan tier? Existing active subscribers will retain access until the end of their current billing cycle.`}
+        confirmText="Deactivate Tier"
+        cancelText="Keep Active"
+        variant="destructive"
+        isLoading={isDeactivating}
+        onConfirm={executeDeactivate}
+        onCancel={() => setDeactivatePlanTarget(null)}
+      />
 
       {/* CREATE / EDIT PLAN MODAL */}
       {isModalOpen && createPortal(
@@ -236,10 +275,10 @@ export default function AdminPlans() {
                   <select
                     value={formData.billingCycle}
                     onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value })}
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2] bg-white"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
                   >
                     <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
+                    <option value="yearly">Yearly (Annual)</option>
                   </select>
                 </div>
               </div>
@@ -263,7 +302,7 @@ export default function AdminPlans() {
                     required
                     value={formData.priceUSD}
                     onChange={(e) => setFormData({ ...formData, priceUSD: e.target.value })}
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
                   />
                 </div>
                 <div className="space-y-1">
@@ -273,30 +312,30 @@ export default function AdminPlans() {
                     required
                     value={formData.priceINR}
                     onChange={(e) => setFormData({ ...formData, priceINR: e.target.value })}
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-zinc-700 block">Rate Limit (Req / Min)</label>
+                  <label className="font-bold text-zinc-700 block">Max Requests / Min</label>
                   <input
                     type="number"
                     required
                     value={formData.maxRequestsPerMinute}
                     onChange={(e) => setFormData({ ...formData, maxRequestsPerMinute: e.target.value })}
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-zinc-700 block">Token Quota / Month</label>
+                  <label className="font-bold text-zinc-700 block">Max Tokens / Month</label>
                   <input
                     type="number"
                     required
                     value={formData.maxTokensPerMonth}
                     onChange={(e) => setFormData({ ...formData, maxTokensPerMonth: e.target.value })}
-                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
+                    className="w-full px-3 py-2 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5865f2]"
                   />
                 </div>
               </div>

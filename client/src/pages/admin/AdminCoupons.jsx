@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
-import { Tag, Plus, CheckCircle, X, Percent, Calendar, Hash } from 'lucide-react';
+import { Tag, Plus, X } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 export default function AdminCouponsView() {
   const { showNotification } = useAuth();
@@ -10,6 +11,10 @@ export default function AdminCouponsView() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Confirm Deactivate Coupon State
+  const [toggleCouponTarget, setToggleCouponTarget] = useState(null);
+  const [isToggling, setIsToggling] = useState(false);
 
   const [formData, setFormData] = useState({
     code: '',
@@ -54,15 +59,27 @@ export default function AdminCouponsView() {
     }
   };
 
-  const handleToggle = async (id, currentStatus) => {
+  const handleToggleClick = (coupon) => {
+    if (coupon.isActive) {
+      setToggleCouponTarget(coupon);
+    } else {
+      executeToggle(coupon._id, false);
+    }
+  };
+
+  const executeToggle = async (id, currentStatus) => {
+    setIsToggling(true);
     try {
-      const res = await apiClient.patch(`/admin/coupons/${id}/toggle`, {});
+      const res = await apiClient.patch(`/admin/coupons/${id || toggleCouponTarget._id}/toggle`, {});
       if (res.success) {
         showNotification('success', `Coupon ${!currentStatus ? 'activated' : 'disabled'} successfully.`);
         await fetchCoupons();
       }
     } catch (err) {
       showNotification('error', 'Failed to toggle coupon status.');
+    } finally {
+      setIsToggling(false);
+      setToggleCouponTarget(null);
     }
   };
 
@@ -125,7 +142,7 @@ export default function AdminCouponsView() {
                   </td>
                   <td className="py-3.5 px-5 text-right">
                     <button
-                      onClick={() => handleToggle(c._id, c.isActive)}
+                      onClick={() => handleToggleClick(c)}
                       className="text-xs font-bold text-zinc-600 hover:text-zinc-900 hover:underline cursor-pointer"
                     >
                       {c.isActive ? 'Deactivate' : 'Activate'}
@@ -137,6 +154,19 @@ export default function AdminCouponsView() {
           </tbody>
         </table>
       </div>
+
+      {/* CONFIRM DEACTIVATE COUPON MODAL */}
+      <ConfirmModal
+        isOpen={Boolean(toggleCouponTarget)}
+        title={`Deactivate Coupon '${toggleCouponTarget?.code}'?`}
+        message={`Are you sure you want to disable promotional coupon '${toggleCouponTarget?.code}'? Customers will no longer be able to apply this discount code during checkout.`}
+        confirmText="Deactivate Code"
+        cancelText="Keep Active"
+        variant="destructive"
+        isLoading={isToggling}
+        onConfirm={() => executeToggle(toggleCouponTarget._id, true)}
+        onCancel={() => setToggleCouponTarget(null)}
+      />
 
       {/* MINT COUPON MODAL */}
       {showModal && createPortal(

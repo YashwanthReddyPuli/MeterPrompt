@@ -45,8 +45,8 @@ export default function ApiKeys() {
     }
   };
 
-  const handleCopyKey = (text) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(createdKeyData);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 2000);
   };
@@ -57,16 +57,24 @@ export default function ApiKeys() {
     setTimeout(() => setCopiedSnippet(false), 2000);
   };
 
-  const handleRevokeKey = async (keyId) => {
-    if (!token) return;
+  const handleRevokeClick = (key) => {
+    setRevokeKeyTarget(key);
+  };
+
+  const executeRevokeKey = async () => {
+    if (!token || !revokeKeyTarget) return;
+    setIsRevoking(true);
     try {
-      const data = await apiClient.delete(`/auth/api-keys/${keyId}`);
+      const data = await apiClient.delete(`/auth/api-keys/${revokeKeyTarget._id}`);
       if (data.success) {
-        showNotification('success', 'Secret Key revoked.');
+        showNotification('success', `API Key '${revokeKeyTarget.name}' revoked successfully.`);
         if (fetchUserProfile) await fetchUserProfile();
       }
     } catch (err) {
       showNotification('error', err.message || 'Failed to revoke API key.');
+    } finally {
+      setIsRevoking(false);
+      setRevokeKeyTarget(null);
     }
   };
 
@@ -139,7 +147,7 @@ export default function ApiKeys() {
                     <td className="py-3.5 px-5 text-zinc-500">{k.lastUsed ? new Date(k.lastUsed).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Never'}</td>
                     <td className="py-3.5 px-5 text-right">
                       <button 
-                        onClick={() => handleRevokeKey(k._id)}
+                        onClick={() => handleRevokeClick(k)}
                         className="text-rose-600 hover:text-rose-800 font-semibold px-2.5 py-1 hover:bg-rose-50 rounded-lg transition inline-flex items-center gap-1 text-xs cursor-pointer"
                       >
                         <Trash2 size={13} />
@@ -159,6 +167,19 @@ export default function ApiKeys() {
           </table>
         </div>
       </div>
+
+      {/* CONFIRM REVOKE KEY MODAL */}
+      <ConfirmModal
+        isOpen={Boolean(revokeKeyTarget)}
+        title={`Revoke API Key '${revokeKeyTarget?.name}'?`}
+        message={`Are you sure you want to revoke key '${revokeKeyTarget?.prefix}...'? Applications using this API secret key will immediately lose access to the AI Proxy Gateway.`}
+        confirmText="Revoke Secret Key"
+        cancelText="Keep Key"
+        variant="destructive"
+        isLoading={isRevoking}
+        onConfirm={executeRevokeKey}
+        onCancel={() => setRevokeKeyTarget(null)}
+      />
 
       {/* INTEGRATION QUICKSTART BOX */}
       <div className="bg-white border border-zinc-200 p-6 rounded-2xl shadow-xs space-y-4">
