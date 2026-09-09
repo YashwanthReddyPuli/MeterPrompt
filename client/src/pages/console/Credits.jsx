@@ -44,6 +44,10 @@ export default function Credits() {
   const [selectedPlanForSwitch, setSelectedPlanForSwitch] = useState(null);
   const [switchLoading, setSwitchLoading] = useState(false);
 
+  // Cancel Subscription Modal & Action State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
   // Invoices & Payment History State
   const [invoices, setInvoices] = useState([]);
 
@@ -54,6 +58,7 @@ export default function Credits() {
   const displayPlans = plans && plans.length > 0 ? plans : fallbackPlans;
 
   const hasSub = Boolean(subscription && subscription.planId);
+  const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
   const planName = hasSub ? (subscription.planId.name || 'Starter') : 'No Active Plan';
   const planPrice = hasSub ? (subscription.planId.priceUSD || 19.99) : 0;
   const tokenQuota = hasSub ? (subscription.planId.featureLimits?.maxTokensPerMonth || 100000) : 0;
@@ -83,6 +88,24 @@ export default function Credits() {
   useEffect(() => {
     fetchInvoices();
   }, []);
+
+  const handleCancelSubscription = async () => {
+    if (!subscription?._id) return;
+    setCancelLoading(true);
+    try {
+      const res = await apiClient.put(`/subscriptions/${subscription._id}/cancel`);
+      if (res.success) {
+        setSubscription(res.data);
+        if (fetchUserProfile) await fetchUserProfile();
+        showNotification('success', `Subscription scheduled for cancellation on ${nextBillingFormatted}.`);
+        setCancelModalOpen(false);
+      }
+    } catch (err) {
+      showNotification('error', err.message || 'Failed to cancel subscription.');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   // Handle Top-Up Flow with $10 Minimum and Animated Receipt Card
   const handleTopUpCredits = async (amountInput) => {
@@ -255,10 +278,16 @@ export default function Credits() {
               <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider">
                 Current Plan
               </span>
-              <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${hasSub ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-zinc-100 text-zinc-600 border border-zinc-200'}`}>
-                <CheckCircle2 size={12} />
-                {hasSub ? 'Active' : 'Unsubscribed'}
-              </span>
+              {hasSub && isCanceling ? (
+                <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200">
+                  Cancels on {nextBillingFormatted}
+                </span>
+              ) : (
+                <span className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full flex items-center gap-1 ${hasSub ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-zinc-100 text-zinc-600 border border-zinc-200'}`}>
+                  <CheckCircle2 size={12} />
+                  {hasSub ? 'Active' : 'Unsubscribed'}
+                </span>
+              )}
             </div>
 
             <div className="mt-2 flex items-baseline justify-between">
@@ -283,13 +312,24 @@ export default function Credits() {
                 {hasSub ? nextBillingFormatted : 'N/A'}
               </span>
             </div>
-            <div>
-              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">
-                Proration Balance
-              </span>
-              <span className="text-xs font-bold text-emerald-700 font-mono mt-0.5 block">
-                ${subscription?.prorationBalanceUSD || '0.00'}
-              </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block">
+                  Proration Balance
+                </span>
+                <span className="text-xs font-bold text-emerald-700 font-mono mt-0.5 block">
+                  ${subscription?.prorationBalanceUSD || '0.00'}
+                </span>
+              </div>
+              {hasSub && !isCanceling && (
+                <button
+                  type="button"
+                  onClick={() => setCancelModalOpen(true)}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                >
+                  Cancel Plan
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -548,6 +588,52 @@ export default function Credits() {
         onClose={() => setReceiptModalOpen(false)}
         details={receiptDetails}
       />
+
+      {/* MODAL 4: CANCEL SUBSCRIPTION CONFIRMATION DIALOG */}
+      {cancelModalOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 bg-black/20 transition-opacity" 
+            onClick={() => !cancelLoading && setCancelModalOpen(null)} 
+          />
+
+          <div className="relative z-10 bg-white border border-zinc-200 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 border-b border-zinc-200 pb-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-zinc-900">Cancel Gateway Subscription</h3>
+                <p className="text-xs text-zinc-500">Access remains active until period end</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-zinc-600 leading-relaxed">
+              Are you sure you want to cancel your <strong className="text-zinc-900">{planName}</strong> plan? Your gateway rate limits and access will remain fully functional until <strong className="text-zinc-900">{nextBillingFormatted}</strong>.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(false)}
+                disabled={cancelLoading}
+                className="px-4 py-2.5 text-xs font-bold text-zinc-600 hover:text-zinc-900 transition cursor-pointer"
+              >
+                Keep Subscription
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelSubscription}
+                disabled={cancelLoading}
+                className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl transition shadow-md shadow-rose-500/25 cursor-pointer flex items-center gap-2"
+              >
+                {cancelLoading ? 'Canceling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
