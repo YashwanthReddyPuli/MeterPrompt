@@ -95,7 +95,7 @@ export default function ModelsCatalog({ setCurrentRoute, setAuthMode }) {
     setConfirmModalOpen(true);
   };
 
-  const handleConfirmAction = async () => {
+  const handleConfirmAction = async (appliedCoupon) => {
     if (!targetPlanForModal) return;
     setModalLoading(true);
     try {
@@ -121,7 +121,11 @@ export default function ModelsCatalog({ setCurrentRoute, setAuthMode }) {
         if (fetchUserProfile) await fetchUserProfile();
 
         const rawPrice = targetPlanForModal.priceUSD || 19.99;
-        const chargedAmount = billingCycle === 'yearly' ? Number((rawPrice * 12 * 0.8).toFixed(2)) : rawPrice;
+        let chargedAmount = billingCycle === 'yearly' ? Number((rawPrice * 12 * 0.8).toFixed(2)) : rawPrice;
+
+        if (appliedCoupon && appliedCoupon.discountPercent) {
+          chargedAmount = Number((chargedAmount * (1 - appliedCoupon.discountPercent / 100)).toFixed(2));
+        }
 
         // Open Animated Ticket Receipt Card Modal with Confetti Burst
         setReceiptDetails({
@@ -143,6 +147,7 @@ export default function ModelsCatalog({ setCurrentRoute, setAuthMode }) {
       setModalLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-10 py-4 max-w-6xl mx-auto">
@@ -346,10 +351,12 @@ export default function ModelsCatalog({ setCurrentRoute, setAuthMode }) {
         title={modalActionType === 'subscribe' ? `Subscribe to ${targetPlanForModal?.name || 'Plan'}` : `Switch to ${targetPlanForModal?.name || 'Plan'}`}
         message={`Are you sure you want to ${modalActionType === 'subscribe' ? 'subscribe to' : 'switch your tier to'} ${targetPlanForModal?.name || 'this plan'} (${billingCycle === 'yearly' ? 'billed annually with 20% discount' : 'billed monthly'})?`}
         confirmText={modalActionType === 'subscribe' ? 'Confirm Subscription' : 'Confirm Tier Switch'}
+        showCouponInput={true}
         onConfirm={handleConfirmAction}
         onCancel={() => setConfirmModalOpen(false)}
         isLoading={modalLoading}
       />
+
 
       {/* ANIMATED RECEIPT MODAL */}
       <InvoiceReceiptModal 

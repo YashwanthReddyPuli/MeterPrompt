@@ -28,6 +28,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const billingRoutes = require('./routes/billingRoutes');
+const couponRoutes = require('./routes/couponRoutes');
+const adminBillingRoutes = require('./routes/adminBillingRoutes');
+const adminReportRoutes = require('./routes/adminReportRoutes');
 
 // Health Check Endpoint (accessible at /health and /api/health)
 const healthHandler = (req, res) => {
@@ -48,8 +51,12 @@ app.use('/api/keys', authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/billing', adminBillingRoutes);
 app.use('/api/invoices', billingRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/admin', adminReportRoutes);
 app.use('/api/v1', gatewayRoutes);
+
 
 
 // 404 Route Not Found Handler

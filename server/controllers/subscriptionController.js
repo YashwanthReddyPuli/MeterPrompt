@@ -252,22 +252,30 @@ const cancelSubscription = async (req, res, next) => {
     }
 
     subscription.cancelAtPeriodEnd = true;
+    subscription.canceledAt = new Date();
+    // Maintain status as 'active' or 'grace_period' until currentPeriodEnd passes
+    if (subscription.status !== 'canceled') {
+      subscription.status = 'active';
+    }
+
     subscription.auditTrail.push({
       action: 'CANCELED',
-      note: `Subscription set to cancel at end of current period (${subscription.currentPeriodEnd.toISOString()}).`
+      note: `Subscription set to cancel at end of current period (${subscription.currentPeriodEnd ? subscription.currentPeriodEnd.toISOString() : 'period end'}).`,
+      timestamp: new Date()
     });
 
     await subscription.save();
 
     return res.status(200).json({
       success: true,
-      message: 'Subscription scheduled for period-end cancellation.',
+      message: 'Subscription scheduled for cancellation at period end.',
       data: subscription
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 module.exports = {
   createSubscription,

@@ -66,9 +66,14 @@ const subscriptionSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    canceledAt: {
+      type: Date,
+      default: null
+    },
     gracePeriodEnd: {
       type: Date
     },
+
     prorationBalanceUSD: {
       type: Number,
       default: 0
