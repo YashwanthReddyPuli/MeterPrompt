@@ -48,7 +48,9 @@ app.use('/api/keys', authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/invoices', billingRoutes);
 app.use('/api/v1', gatewayRoutes);
+
 
 // 404 Route Not Found Handler
 app.use((req, res, next) => {

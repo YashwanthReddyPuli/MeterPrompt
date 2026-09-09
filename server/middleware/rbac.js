@@ -1,7 +1,5 @@
-/**
- * Role-Based Access Control (RBAC) Authorization Middleware
- * Enforces permissions for Customer vs Billing Admin
- */
+const { requireRole } = require('./auth');
+
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -12,11 +10,15 @@ const authorize = (...roles) => {
       });
     }
 
+    if (roles.length === 1) {
+      return requireRole(roles[0])(req, res, next);
+    }
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
-        message: `Role '${req.user.role}' is not authorized to access this route. Required role: ${roles.join(' or ')}.`,
-        errorCode: 'AUTHORIZATION_ERROR'
+        message: 'Action not permitted for this role',
+        errorCode: 'FORBIDDEN_ROLE_ACCESS'
       });
     }
 
@@ -24,4 +26,5 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authorize };
+module.exports = { authorize, requireRole };
+

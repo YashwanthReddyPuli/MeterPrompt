@@ -39,4 +39,18 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const requireRole = (role) => {
+  return (req, res, next) => {
+    if (!req.user || req.user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: 'Action not permitted for this role',
+        errorCode: 'FORBIDDEN_ROLE_ACCESS'
+      });
+    }
+    next();
+  };
+};
+
+module.exports = { protect, requireRole };
+

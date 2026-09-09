@@ -7,9 +7,9 @@ const Plan = require('../models/Plan');
  */
 const createPlan = async (req, res, next) => {
   try {
-    const { name, description, priceUSD, priceINR, billingCycle, featureLimits } = req.body;
+    const { name, description, price, priceUSD, priceINR, billingCycle, featureLimits } = req.body;
 
-    const existingPlan = await Plan.findOne({ name });
+    const existingPlan = await Plan.findOne({ name: new RegExp(`^${name}$`, 'i') });
     if (existingPlan) {
       return res.status(409).json({
         success: false,
@@ -18,13 +18,19 @@ const createPlan = async (req, res, next) => {
       });
     }
 
+    const finalPriceUSD = priceUSD !== undefined ? Number(priceUSD) : (price !== undefined ? Number(price) : 0);
+    const finalPriceINR = priceINR !== undefined ? Number(priceINR) : Math.round(finalPriceUSD * 80);
+
     const plan = await Plan.create({
       name,
-      description,
-      priceUSD,
-      priceINR,
+      description: description || `${name} Tier Plan`,
+      priceUSD: finalPriceUSD,
+      priceINR: finalPriceINR,
       billingCycle: billingCycle || 'monthly',
-      featureLimits
+      featureLimits: featureLimits || {
+        maxRequestsPerMinute: 60,
+        maxTokensPerMonth: 100000
+      }
     });
 
     return res.status(201).json({
@@ -36,6 +42,7 @@ const createPlan = async (req, res, next) => {
     next(error);
   }
 };
+
 
 /**
  * @route   GET /api/plans
@@ -154,12 +161,16 @@ const updatePlan = async (req, res, next) => {
       });
     }
 
-    const { name, description, priceUSD, priceINR, billingCycle, featureLimits, isActive } = req.body;
+    const { name, description, price, priceUSD, priceINR, billingCycle, featureLimits, isActive } = req.body;
 
     if (name) plan.name = name;
     if (description !== undefined) plan.description = description;
-    if (priceUSD !== undefined) plan.priceUSD = priceUSD;
-    if (priceINR !== undefined) plan.priceINR = priceINR;
+    if (price !== undefined) {
+      plan.priceUSD = Number(price);
+      if (priceINR === undefined) plan.priceINR = Math.round(Number(price) * 80);
+    }
+    if (priceUSD !== undefined) plan.priceUSD = Number(priceUSD);
+    if (priceINR !== undefined) plan.priceINR = Number(priceINR);
     if (billingCycle) plan.billingCycle = billingCycle;
     if (isActive !== undefined) plan.isActive = isActive;
     if (featureLimits) {
@@ -177,6 +188,7 @@ const updatePlan = async (req, res, next) => {
     next(error);
   }
 };
+
 
 /**
  * @route   DELETE /api/plans/:id

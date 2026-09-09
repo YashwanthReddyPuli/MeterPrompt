@@ -31,8 +31,16 @@ const invoiceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Paid', 'Pending', 'Failed'],
-      default: 'Paid'
+      enum: ['paid', 'failed', 'pending', 'Paid', 'Pending', 'Failed'],
+      default: 'paid'
+    },
+    paymentAttempts: {
+      type: Number,
+      default: 1
+    },
+    lastFailureReason: {
+      type: String,
+      default: null
     },
     date: {
       type: Date,
@@ -43,5 +51,6 @@ const invoiceSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

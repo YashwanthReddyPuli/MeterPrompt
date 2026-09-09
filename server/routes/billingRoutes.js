@@ -89,5 +89,71 @@ const getInvoiceHistory = async (req, res, next) => {
 router.get('/history', protect, getInvoiceHistory);
 router.get('/invoices', protect, getInvoiceHistory);
 
+/**
+ * @route   PUT /api/invoices/:id/pay or /api/billing/invoices/:id/pay
+ * @desc    Module 7: Update payment status, increment payment attempts, and log failure reason
+ * @access  Private
+ */
+const payInvoiceHandler = async (req, res, next) => {
+  try {
+    const { paymentStatus, failureReason } = req.body;
+    
+    // Normalize status to lowercase string matching spec ('paid' | 'failed' | 'pending')
+    const normalizedStatus = (paymentStatus || 'paid').toLowerCase();
+
+    if (!['paid', 'failed', 'pending'].includes(normalizedStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid paymentStatus. Must be 'paid', 'failed', or 'pending'.",
+        errorCode: 'INVALID_PAYMENT_STATUS'
+      });
+    }
+
+    let invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      // Also attempt lookup by invoiceNumber if mongo ID not found
+      invoice = await Invoice.findOne({ invoiceNumber: req.params.id });
+    }
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invoice not found.',
+        errorCode: 'NOT_FOUND_ERROR'
+      });
+    }
+
+    invoice.paymentAttempts = (invoice.paymentAttempts || 0) + 1;
+    invoice.status = normalizedStatus;
+    if (normalizedStatus === 'failed') {
+      invoice.lastFailureReason = failureReason || 'Card declined or insufficient funds';
+    } else {
+      invoice.lastFailureReason = null;
+    }
+
+    await invoice.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Invoice status updated to '${normalizedStatus}'.`,
+      data: {
+        id: invoice._id,
+        invoiceNumber: invoice.invoiceNumber,
+        status: invoice.status,
+        paymentAttempts: invoice.paymentAttempts,
+        lastFailureReason: invoice.lastFailureReason,
+        amount: invoice.amount,
+        updatedAt: invoice.updatedAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.put('/invoices/:id/pay', protect, payInvoiceHandler);
+
 module.exports = router;
+module.exports.payInvoiceHandler = payInvoiceHandler;
+
 
