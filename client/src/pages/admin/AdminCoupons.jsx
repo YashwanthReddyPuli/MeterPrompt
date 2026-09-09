@@ -80,8 +80,9 @@ export default function AdminCouponsView() {
           onClick={() => setShowModal(true)}
           className="px-4 py-2.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl shadow-md shadow-[#5865f2]/20 transition-all cursor-pointer flex items-center gap-2"
         >
-          <Plus size={16} /> + Mint New Coupon
+          <Plus size={16} /> Mint New Coupon
         </button>
+
       </div>
 
       {/* COUPONS TABLE */}

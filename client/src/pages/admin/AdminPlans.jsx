@@ -139,8 +139,9 @@ export default function AdminPlans() {
           onClick={openCreateModal}
           className="bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition shadow-md shadow-[#5865f2]/20 flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
-          <Plus size={16} /> + Create New Tier
+          <Plus size={16} /> Create New Tier
         </button>
+
       </div>
 
       {/* PLANS TABLE */}
