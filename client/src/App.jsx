@@ -25,6 +25,12 @@ import Credits from './pages/console/Credits';
 import Notifications from './pages/console/Notifications';
 import Preferences from './pages/console/Preferences';
 
+// Admin Pages
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPlans from './pages/admin/AdminPlans';
+import AdminDunning from './pages/admin/AdminDunning';
+
 import apiClient from './services/apiClient';
 
 function AppContent() {
@@ -32,11 +38,13 @@ function AppContent() {
   const [currentRoute, setCurrentRoute] = useState(
     window.location.pathname === '/' ? 'landing' : 'not-found'
   );
-    React.useEffect(() => {
+  
+  React.useEffect(() => {
     if (currentRoute === 'landing') {
       window.history.pushState({}, '', '/');
     }
   }, [currentRoute]);
+  
   const [docsTab, setDocsTab] = useState('overview');
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
 
@@ -54,6 +62,13 @@ function AppContent() {
 
   const isConsoleRoute = currentRoute.startsWith('console-');
 
+  // Automatic Admin Route Redirection
+  React.useEffect(() => {
+    if (user?.role === 'admin' && isConsoleRoute && !currentRoute.startsWith('console-admin-')) {
+      setCurrentRoute('console-admin-overview');
+    }
+  }, [user, currentRoute, isConsoleRoute]);
+
   const navigateToConsole = (subRoute) => {
     if (!user) {
       setAuthMode('login');
@@ -61,7 +76,11 @@ function AppContent() {
       showNotification('info', 'Authentication required to access Developer Console.');
       return;
     }
-    setCurrentRoute(`console-${subRoute}`);
+    if (user.role === 'admin') {
+      setCurrentRoute('console-admin-overview');
+    } else {
+      setCurrentRoute(`console-${subRoute}`);
+    }
   };
 
   const handleCreateApiKeyAction = async (keyName) => {
@@ -99,6 +118,7 @@ function AppContent() {
           <Sidebar currentRoute={currentRoute} setCurrentRoute={setCurrentRoute} />
           
           <main className="flex-1 ml-16 p-8 max-w-6xl w-full mx-auto space-y-6">
+            {/* Customer Routes */}
             {currentRoute === 'console-overview' && (
               <Overview setCurrentRoute={setCurrentRoute} setCreateKeyModalOpen={setCreateKeyModalOpen} />
             )}
@@ -115,6 +135,12 @@ function AppContent() {
             )}
             {currentRoute === 'console-notifications' && <Notifications />}
             {currentRoute === 'console-preferences' && <Preferences />}
+
+            {/* Admin Dedicated Control Center Routes */}
+            {currentRoute === 'console-admin-overview' && <AdminOverview />}
+            {currentRoute === 'console-admin-users' && <AdminUsers />}
+            {currentRoute === 'console-admin-plans' && <AdminPlans />}
+            {currentRoute === 'console-admin-dunning' && <AdminDunning />}
           </main>
         </div>
       ) : (

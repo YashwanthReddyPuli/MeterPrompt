@@ -52,4 +52,28 @@ router.post('/retry-failed', protect, requireRole('admin'), async (req, res, nex
   }
 });
 
+/**
+ * @route   GET /api/admin/invoices/failed
+ * @desc    Get all failed or past_due invoices for Dunning Monitor
+ * @access  Private (Admin)
+ */
+router.get('/invoices/failed', protect, requireRole('admin'), async (req, res, next) => {
+  try {
+    const failedInvoices = await Invoice.find({
+      status: { $in: ['failed', 'Failed', 'past_due', 'open'] }
+    })
+      .populate('customerId', 'name email role')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: failedInvoices.length,
+      data: failedInvoices
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
+

@@ -5,7 +5,7 @@ import { Home, Key, User, BarChart2, FileText, CreditCard, Bell, Settings, LogOu
 export default function Sidebar({ currentRoute, setCurrentRoute }) {
   const { user, logout } = useAuth();
 
-  const navItems = [
+  const customerNavItems = [
     { id: 'console-overview', label: 'Overview', icon: Home },
     { id: 'console-keys', label: 'API Keys', icon: Key },
     { id: 'console-profile', label: 'Profile', icon: User },
@@ -15,6 +15,15 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
     { id: 'console-notifications', label: 'Notifications & Alerts', icon: Bell },
     { id: 'console-preferences', label: 'Preferences', icon: Settings },
   ];
+
+  const adminNavItems = [
+    { id: 'console-admin-overview', label: 'Revenue & Churn (MRR)', icon: BarChart2 },
+    { id: 'console-admin-users', label: 'User Directory & Drilldown', icon: User },
+    { id: 'console-admin-plans', label: 'Manage Plans (CRUD)', icon: Settings },
+    { id: 'console-admin-dunning', label: 'Dunning & Recovery', icon: CreditCard },
+  ];
+
+  const navItems = user?.role === 'admin' ? adminNavItems : customerNavItems;
 
   return (
     <aside className="group fixed top-0 left-0 h-full z-40 bg-white border-r border-zinc-200 transition-all duration-300 ease-in-out w-16 hover:w-64 flex flex-col justify-between py-5 overflow-hidden shadow-sm hover:shadow-xl">
@@ -28,9 +37,12 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
           <div className="w-8 h-8 rounded-lg bg-[#5865f2] text-white flex items-center justify-center font-extrabold text-sm shrink-0 shadow-md shadow-[#5865f2]/20">
             MP
           </div>
-          <span className="font-extrabold text-zinc-900 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap tracking-tight">
-            MeterPrompt
-          </span>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap tracking-tight">
+            <span className="font-extrabold text-zinc-900 text-sm block">MeterPrompt</span>
+            {user?.role === 'admin' && (
+              <span className="text-[10px] font-extrabold text-[#5865f2] uppercase tracking-wider block">Admin Control</span>
+            )}
+          </div>
         </div>
 
         {/* Navigation Items */}
@@ -57,6 +69,7 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
           })}
         </nav>
       </div>
+
 
       {/* User Footer Profile in Sidebar */}
       <div className="px-3 border-t border-zinc-200 pt-3.5 flex items-center justify-between">
