@@ -19,6 +19,14 @@ const couponSchema = new mongoose.Schema(
       type: Date,
       required: true
     },
+    maxRedemptions: {
+      type: Number,
+      default: null
+    },
+    timesRedeemed: {
+      type: Number,
+      default: 0
+    },
     isActive: {
       type: Boolean,
       default: true
@@ -26,5 +34,6 @@ const couponSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
 
 module.exports = mongoose.model('Coupon', couponSchema);

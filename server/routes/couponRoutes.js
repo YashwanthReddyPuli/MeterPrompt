@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
-const { protect } = require('../middleware/auth');
+const { protect, requireRole } = require('../middleware/auth');
 const { dispatchBillingEvent } = require('../utils/eventBus');
+const {
+  getAllCoupons,
+  createCoupon,
+  toggleCouponStatus
+} = require('../controllers/couponController');
 
 /**
  * @route   POST /api/coupons/apply
@@ -39,6 +44,18 @@ router.post('/apply', protect, async (req, res, next) => {
       });
     }
 
+    if (coupon.maxRedemptions && coupon.timesRedeemed >= coupon.maxRedemptions) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon redemption limit has been reached.',
+        errorCode: 'INVALID_COUPON'
+      });
+    }
+
+    // Increment redemption count
+    coupon.timesRedeemed = (coupon.timesRedeemed || 0) + 1;
+    await coupon.save();
+
     if (req.user) {
       await dispatchBillingEvent({
         type: 'customer.discount.applied',
@@ -61,5 +78,11 @@ router.post('/apply', protect, async (req, res, next) => {
   }
 });
 
+// Admin Coupon Management Routes (Module 9 Extension)
+router.get('/admin/coupons', protect, requireRole('admin'), getAllCoupons);
+router.post('/admin/coupons', protect, requireRole('admin'), createCoupon);
+router.patch('/admin/coupons/:id/toggle', protect, requireRole('admin'), toggleCouponStatus);
+
 module.exports = router;
+
 

@@ -56,10 +56,12 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/billing', adminBillingRoutes);
 app.use('/api/invoices', billingRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/admin', couponRoutes);
 app.use('/api/admin', adminReportRoutes);
 app.use('/api/admin', adminBillingRoutes);
 app.use('/api/admin', adminUserRoutes);
 app.use('/api/admin', adminEventRoutes);
+
 app.use('/api/v1', gatewayRoutes);
 
 

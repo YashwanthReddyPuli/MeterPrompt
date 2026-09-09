@@ -31,8 +31,10 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
 import AdminDunning from './pages/admin/AdminDunning';
 import AdminEvents from './pages/admin/AdminEvents';
+import AdminCoupons from './pages/admin/AdminCoupons';
 
 import apiClient from './services/apiClient';
+
 
 
 function AppContent() {
@@ -140,11 +142,13 @@ function AppContent() {
 
             {/* Admin Dedicated Control Center Routes */}
             {currentRoute === 'console-admin-overview' && <AdminOverview />}
+            {currentRoute === 'console-admin-coupons' && <AdminCoupons />}
             {currentRoute === 'console-admin-events' && <AdminEvents />}
             {currentRoute === 'console-admin-users' && <AdminUsers />}
             {currentRoute === 'console-admin-plans' && <AdminPlans />}
             {currentRoute === 'console-admin-dunning' && <AdminDunning />}
           </main>
+
 
         </div>
       ) : (
