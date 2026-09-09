@@ -116,13 +116,14 @@ function AppContent() {
         setAuthMode={setAuthMode}
       />
 
-      {/* CONSOLE LAYOUT WITH LEFT HOVER DRAWER SIDEBAR */}
+      {/* CONSOLE LAYOUT WITH NON-OVERLAPPING PUSH DRAWER SIDEBAR */}
       {isConsoleRoute ? (
-        <div className="min-h-screen bg-[#fbfbfb] flex flex-col flex-1">
+        <div className="flex-1 flex w-full relative overflow-x-hidden bg-[#fbfbfb]">
           <Sidebar currentRoute={currentRoute} setCurrentRoute={setCurrentRoute} />
           
-          <main className="flex-1 ml-16 p-8 max-w-6xl w-full mx-auto space-y-6">
+          <main className="flex-1 min-w-0 p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto space-y-6">
             {/* Customer Routes */}
+
             {currentRoute === 'console-overview' && (
               <Overview setCurrentRoute={setCurrentRoute} setCreateKeyModalOpen={setCreateKeyModalOpen} />
             )}
