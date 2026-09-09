@@ -7,7 +7,8 @@ const {
   createSubscription,
   getCurrentSubscription,
   changePlan,
-  cancelSubscription
+  cancelSubscription,
+  getCurrentSubscriptionUsage
 } = require('../controllers/subscriptionController');
 
 const createSubRules = [
@@ -28,6 +29,7 @@ router.use(protect);
 
 router.post('/', validate(createSubRules), createSubscription);
 router.get('/me', getCurrentSubscription);
+router.get('/me/usage', getCurrentSubscriptionUsage);
 router.put('/:id/change-plan', validate(changePlanRules), changePlan);
 router.put('/:id/cancel', validate(subIdRules), cancelSubscription);
 

@@ -396,11 +396,91 @@ const cancelSubscription = async (req, res, next) => {
   }
 };
 
+/**
+ * @route   GET /api/subscriptions/me/usage
+ * @desc    Get current subscription's token usage vs plan limit
+ * @access  Private (Customer)
+ */
+const getCurrentSubscriptionUsage = async (req, res, next) => {
+  try {
+    const customerId = req.user._id;
+    const UsageRecord = require('../models/UsageRecord');
 
+    const subscription = await Subscription.findOne({
+      customerId,
+      status: { $in: ['active', 'past_due', 'grace_period'] }
+    }).populate('planId');
+
+    if (!subscription) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          hasSubscription: false,
+          totalTokensUsed: 0,
+          maxTokensPerMonth: 0,
+          usagePercentage: 0
+        }
+      });
+    }
+
+    const plan = subscription.planId;
+    const maxTokensPerMonth = plan?.featureLimits?.maxTokensPerMonth || 100000;
+
+    const periodUsageAggregate = await UsageRecord.aggregate([
+      {
+        $match: {
+          subscriptionId: subscription._id,
+          createdAt: {
+            $gte: subscription.currentPeriodStart,
+            $lte: subscription.currentPeriodEnd
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalPeriodTokens: { $sum: '$totalTokens' },
+          promptTokens: { $sum: '$promptTokens' },
+          completionTokens: { $sum: '$completionTokens' },
+          totalCostUSD: { $sum: '$costUSD' }
+        }
+      }
+    ]);
+
+    const stats = periodUsageAggregate.length > 0 ? periodUsageAggregate[0] : {
+      totalPeriodTokens: 0,
+      promptTokens: 0,
+      completionTokens: 0,
+      totalCostUSD: 0
+    };
+
+    const usagePercentage = Math.min(100, Number(((stats.totalPeriodTokens / maxTokensPerMonth) * 100).toFixed(2)));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        hasSubscription: true,
+        subscriptionId: subscription._id,
+        planName: plan?.name || 'Current Plan',
+        totalTokensUsed: stats.totalPeriodTokens,
+        promptTokensUsed: stats.promptTokens,
+        completionTokensUsed: stats.completionTokens,
+        maxTokensPerMonth,
+        usagePercentage,
+        overageCostUSD: Number(stats.totalCostUSD.toFixed(4)),
+        periodStart: subscription.currentPeriodStart,
+        periodEnd: subscription.currentPeriodEnd
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createSubscription,
   getCurrentSubscription,
   changePlan,
-  cancelSubscription
+  cancelSubscription,
+  getCurrentSubscriptionUsage
 };
