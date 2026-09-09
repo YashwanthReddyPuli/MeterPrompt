@@ -30,8 +30,10 @@ import AdminOverview from './pages/admin/AdminOverview';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
 import AdminDunning from './pages/admin/AdminDunning';
+import AdminEvents from './pages/admin/AdminEvents';
 
 import apiClient from './services/apiClient';
+
 
 function AppContent() {
   const { user, showNotification } = useAuth();
@@ -138,10 +140,12 @@ function AppContent() {
 
             {/* Admin Dedicated Control Center Routes */}
             {currentRoute === 'console-admin-overview' && <AdminOverview />}
+            {currentRoute === 'console-admin-events' && <AdminEvents />}
             {currentRoute === 'console-admin-users' && <AdminUsers />}
             {currentRoute === 'console-admin-plans' && <AdminPlans />}
             {currentRoute === 'console-admin-dunning' && <AdminDunning />}
           </main>
+
         </div>
       ) : (
         /* PUBLIC VIEWS */

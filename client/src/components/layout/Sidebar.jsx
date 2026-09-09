@@ -18,10 +18,12 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
 
   const adminNavItems = [
     { id: 'console-admin-overview', label: 'Revenue & Churn (MRR)', icon: BarChart2 },
+    { id: 'console-admin-events', label: 'Billing Events Stream', icon: Bell },
     { id: 'console-admin-users', label: 'User Directory & Drilldown', icon: User },
     { id: 'console-admin-plans', label: 'Manage Plans (CRUD)', icon: Settings },
     { id: 'console-admin-dunning', label: 'Dunning & Recovery', icon: CreditCard },
   ];
+
 
   const navItems = user?.role === 'admin' ? adminNavItems : customerNavItems;
 

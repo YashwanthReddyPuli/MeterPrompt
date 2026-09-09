@@ -6,6 +6,8 @@ const { protect } = require('../middleware/auth');
 const User = require('../models/User');
 const Invoice = require('../models/Invoice');
 
+const { dispatchBillingEvent } = require('../utils/eventBus');
+
 const topUpRules = [
   body('amount').notEmpty().withMessage('Amount is required')
 ];
@@ -50,6 +52,18 @@ router.post('/top-up', protect, validate(topUpRules), async (req, res, next) => 
       description: 'Balance Top-Up',
       status: 'Paid',
       date: new Date()
+    });
+
+    await dispatchBillingEvent({
+      type: 'invoice.payment_succeeded',
+      customerId: user._id,
+      object: {
+        invoiceId: invoice.invoiceNumber,
+        amount: invoice.amount,
+        status: 'paid',
+        type: 'topup'
+      },
+      req
     });
 
     return res.status(200).json({
@@ -133,6 +147,19 @@ const payInvoiceHandler = async (req, res, next) => {
 
     await invoice.save();
 
+    const eventType = normalizedStatus === 'failed' ? 'invoice.payment_failed' : 'invoice.payment_succeeded';
+    await dispatchBillingEvent({
+      type: eventType,
+      customerId: invoice.customerId,
+      object: {
+        invoiceId: invoice.invoiceNumber,
+        amount: invoice.amount,
+        status: normalizedStatus,
+        failureReason: invoice.lastFailureReason
+      },
+      req
+    });
+
     return res.status(200).json({
       success: true,
       message: `Invoice status updated to '${normalizedStatus}'.`,
@@ -150,6 +177,7 @@ const payInvoiceHandler = async (req, res, next) => {
     next(error);
   }
 };
+
 
 router.put('/invoices/:id/pay', protect, payInvoiceHandler);
 

@@ -32,6 +32,7 @@ const couponRoutes = require('./routes/couponRoutes');
 const adminBillingRoutes = require('./routes/adminBillingRoutes');
 const adminReportRoutes = require('./routes/adminReportRoutes');
 const adminUserRoutes = require('./routes/adminUserRoutes');
+const adminEventRoutes = require('./routes/adminEventRoutes');
 
 // Health Check Endpoint (accessible at /health and /api/health)
 const healthHandler = (req, res) => {
@@ -58,7 +59,9 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', adminReportRoutes);
 app.use('/api/admin', adminBillingRoutes);
 app.use('/api/admin', adminUserRoutes);
+app.use('/api/admin', adminEventRoutes);
 app.use('/api/v1', gatewayRoutes);
+
 
 
 

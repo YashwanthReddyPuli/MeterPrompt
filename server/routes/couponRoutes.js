@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
 const { protect } = require('../middleware/auth');
+const { dispatchBillingEvent } = require('../utils/eventBus');
 
 /**
  * @route   POST /api/coupons/apply
  * @desc    Validate and apply coupon code (Module 9)
  * @access  Public / Authenticated
  */
-router.post('/apply', async (req, res, next) => {
+router.post('/apply', protect, async (req, res, next) => {
   try {
     const { code } = req.body;
     if (!code || typeof code !== 'string') {
@@ -38,6 +39,18 @@ router.post('/apply', async (req, res, next) => {
       });
     }
 
+    if (req.user) {
+      await dispatchBillingEvent({
+        type: 'customer.discount.applied',
+        customerId: req.user._id,
+        object: {
+          code: coupon.code,
+          discountPercent: coupon.discountPercent
+        },
+        req
+      });
+    }
+
     return res.status(200).json({
       success: true,
       code: coupon.code,
@@ -49,3 +62,4 @@ router.post('/apply', async (req, res, next) => {
 });
 
 module.exports = router;
+

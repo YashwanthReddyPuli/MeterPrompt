@@ -4,6 +4,8 @@ const Plan = require('../models/Plan');
 const Invoice = require('../models/Invoice');
 const { calculateProration } = require('../utils/proration');
 
+const { dispatchBillingEvent } = require('../utils/eventBus');
+
 /**
  * @route   POST /api/subscriptions
  * @desc    Customer subscribes to a plan (Module 3)
@@ -89,6 +91,32 @@ const createSubscription = async (req, res, next) => {
       date: now
     });
 
+    // Dispatch Billing Event
+    await dispatchBillingEvent({
+      type: 'customer.subscription.created',
+      customerId: req.user._id,
+      object: {
+        id: subscription._id,
+        plan: plan.name,
+        billingCycle: plan.billingCycle || 'monthly',
+        status: 'active',
+        currentPeriodEnd: subscription.currentPeriodEnd
+      },
+      req
+    });
+
+    await dispatchBillingEvent({
+      type: 'invoice.payment_succeeded',
+      customerId: req.user._id,
+      object: {
+        invoiceId: invoice.invoiceNumber,
+        amount: invoice.amount,
+        status: 'paid',
+        type: 'subscription'
+      },
+      req
+    });
+
     return res.status(201).json({
       success: true,
       message: `Successfully subscribed to plan '${plan.name}'.`,
@@ -136,7 +164,7 @@ const getCurrentSubscription = async (req, res, next) => {
  */
 const changePlan = async (req, res, next) => {
   try {
-    const { newPlanId } = req.body;
+    const { newPlanId, billingCycle: newCycle } = req.body;
     const subscriptionId = req.params.id;
 
     const subscription = await Subscription.findById(subscriptionId).populate('planId');
@@ -167,13 +195,8 @@ const changePlan = async (req, res, next) => {
     }
 
     const currentPlanId = subscription.planId?._id || subscription.planId;
-    if (currentPlanId && currentPlanId.toString() === newPlan._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Subscription is already on this plan.',
-        errorCode: 'SAME_PLAN_ERROR'
-      });
-    }
+    const oldPlanName = subscription.planId?.name || 'Previous Plan';
+    const oldCycle = subscription.planId?.billingCycle || 'monthly';
 
     // Perform proration calculation
     const oldPlan = subscription.planId || newPlan;
@@ -215,6 +238,24 @@ const changePlan = async (req, res, next) => {
     await subscription.save();
     const updatedSub = await Subscription.findById(subscription._id).populate('planId');
 
+    // Dispatch Billing Event
+    await dispatchBillingEvent({
+      type: 'customer.subscription.updated',
+      customerId: req.user._id,
+      object: {
+        id: subscription._id,
+        plan: newPlan.name,
+        billingCycle: newCycle || newPlan.billingCycle || 'monthly',
+        status: 'active',
+        currentPeriodEnd: subscription.currentPeriodEnd
+      },
+      previousAttributes: {
+        plan: oldPlanName,
+        billingCycle: oldCycle
+      },
+      req
+    });
+
     return res.status(200).json({
       success: true,
       message: `Plan successfully updated to '${newPlan.name}'.`,
@@ -234,7 +275,7 @@ const changePlan = async (req, res, next) => {
  */
 const cancelSubscription = async (req, res, next) => {
   try {
-    const subscription = await Subscription.findById(req.params.id);
+    const subscription = await Subscription.findById(req.params.id).populate('planId');
     if (!subscription) {
       return res.status(404).json({
         success: false,
@@ -266,6 +307,19 @@ const cancelSubscription = async (req, res, next) => {
 
     await subscription.save();
 
+    // Dispatch Billing Event
+    await dispatchBillingEvent({
+      type: 'customer.subscription.cancel_scheduled',
+      customerId: req.user._id,
+      object: {
+        id: subscription._id,
+        plan: subscription.planId?.name || 'Current Plan',
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: subscription.currentPeriodEnd
+      },
+      req
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Subscription scheduled for cancellation at period end.',
@@ -275,6 +329,7 @@ const cancelSubscription = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 module.exports = {
