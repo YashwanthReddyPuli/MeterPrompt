@@ -48,14 +48,14 @@ const healthHandler = (req, res) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
-// API Routes
+// API Route Mounting
 app.use('/api/auth', authRoutes);
 app.use('/api/keys', authRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/invoices', billingRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/billing', adminBillingRoutes);
-app.use('/api/invoices', billingRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/admin', couponRoutes);
 app.use('/api/admin', adminReportRoutes);
@@ -63,7 +63,10 @@ app.use('/api/admin', adminBillingRoutes);
 app.use('/api/admin', adminUserRoutes);
 app.use('/api/admin', adminEventRoutes);
 
+// AI Proxy Gateway Endpoints (/api/v1/chat/completions and /api/proxy/v1/chat/completions)
 app.use('/api/v1', gatewayRoutes);
+app.use('/api/proxy/v1', gatewayRoutes);
+app.use('/api/proxy', gatewayRoutes);
 
 
 
@@ -78,8 +81,11 @@ app.all('/api/*', (req, res, next) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[MeterPrompt Server] Running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+let server;
+if (require.main === module) {
+  server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`[MeterPrompt Server] Running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  });
+}
 
 module.exports = { app, server };

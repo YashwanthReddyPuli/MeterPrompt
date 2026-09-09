@@ -81,6 +81,9 @@ router.post('/apply', protect, async (req, res, next) => {
 });
 
 // Admin Coupon Management Routes (Module 9 Extension)
+router.get('/coupons', protect, requireRole('admin'), getAllCoupons);
+router.post('/coupons', protect, requireRole('admin'), createCoupon);
+router.patch('/coupons/:id/toggle', protect, requireRole('admin'), toggleCouponStatus);
 router.get('/admin/coupons', protect, requireRole('admin'), getAllCoupons);
 router.post('/admin/coupons', protect, requireRole('admin'), createCoupon);
 router.patch('/admin/coupons/:id/toggle', protect, requireRole('admin'), toggleCouponStatus);

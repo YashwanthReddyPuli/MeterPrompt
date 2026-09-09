@@ -34,9 +34,12 @@ router.post('/login', validate(loginRules), loginUser);
 router.get('/me', protect, getMe);
 
 // API Key Management Endpoints
+router.post('/', protect, validate(apiKeyRules), createApiKey);
+router.get('/', protect, getMe);
 router.post('/api-keys', protect, validate(apiKeyRules), createApiKey);
 router.post('/keys', protect, validate(apiKeyRules), createApiKey);
 router.delete('/api-keys/:keyId', protect, validate([param('keyId').isMongoId().withMessage('Invalid Key ID')]), revokeApiKey);
 router.delete('/keys/:keyId', protect, validate([param('keyId').isMongoId().withMessage('Invalid Key ID')]), revokeApiKey);
+router.delete('/:keyId', protect, validate([param('keyId').isMongoId().withMessage('Invalid Key ID')]), revokeApiKey);
 
 module.exports = router;

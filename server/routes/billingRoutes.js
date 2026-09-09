@@ -182,7 +182,54 @@ const payInvoiceHandler = async (req, res, next) => {
 };
 
 
-router.put('/invoices/:id/pay', protect, payInvoiceHandler);
+/**
+ * @route   POST /api/invoices/generate
+ * @desc    Generate periodic cycle invoice for customer
+ * @access  Private
+ */
+const generatePeriodicInvoice = async (req, res, next) => {
+  try {
+    const customerId = req.user._id;
+    const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+    const amount = req.body.amount !== undefined ? parseFloat(req.body.amount) : 49.99;
+    const description = req.body.description || 'Periodic Cycle Invoice Settlement';
+
+    const invoice = await Invoice.create({
+      customerId,
+      invoiceNumber,
+      amount,
+      currency: 'USD',
+      type: 'subscription',
+      description,
+      status: 'Paid',
+      date: new Date()
+    });
+
+    await dispatchBillingEvent({
+      type: 'invoice.created',
+      customerId,
+      summary: `Periodic cycle invoice ${invoiceNumber} generated for $${amount.toFixed(2)}`,
+      object: {
+        invoiceId: invoiceNumber,
+        amount,
+        status: 'paid'
+      },
+      req
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Periodic cycle invoice generated successfully.',
+      invoice
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+router.get('/', protect, getInvoiceHistory);
+router.post('/generate', protect, generatePeriodicInvoice);
+router.put('/:id/pay', protect, payInvoiceHandler);
 
 module.exports = router;
 module.exports.payInvoiceHandler = payInvoiceHandler;
