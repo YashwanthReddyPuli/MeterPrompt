@@ -39,15 +39,24 @@ const protect = async (req, res, next) => {
   }
 };
 
-const requireRole = (role) => {
+const requireRole = (allowedRole) => {
   return (req, res, next) => {
-    if (!req.user || req.user.role !== role) {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        errorCode: 'UNAUTHORIZED'
+      });
+    }
+
+    if (req.user.role !== allowedRole) {
       return res.status(403).json({
         success: false,
-        message: 'Action not permitted for this role',
+        message: `Access denied. Requires '${allowedRole}' role.`,
         errorCode: 'FORBIDDEN_ROLE_ACCESS'
       });
     }
+
     next();
   };
 };

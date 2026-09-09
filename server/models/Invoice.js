@@ -31,12 +31,17 @@ const invoiceSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['paid', 'open', 'failed', 'past_due', 'Paid', 'Pending', 'Failed'],
+      enum: ['paid', 'pending', 'open', 'failed', 'past_due', 'Paid', 'Pending', 'Failed'],
       default: 'open'
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['paid', 'pending', 'failed'],
+      default: 'pending'
     },
     paymentAttempts: {
       type: Number,
-      default: 1
+      default: 0
     },
     paymentRetries: {
       type: Number,
@@ -44,6 +49,10 @@ const invoiceSchema = new mongoose.Schema(
     },
     nextRetryDate: {
       type: Date,
+      default: null
+    },
+    failureReason: {
+      type: String,
       default: null
     },
     lastFailureReason: {
