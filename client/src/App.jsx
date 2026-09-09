@@ -33,6 +33,12 @@ import AdminDunning from './pages/admin/AdminDunning';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminCoupons from './pages/admin/AdminCoupons';
 
+// Error Pages
+import NotFoundPage from './pages/errors/NotFoundPage';
+import ForbiddenPage from './pages/errors/ForbiddenPage';
+import ServerErrorPage from './pages/errors/ServerErrorPage';
+import QuotaExceededPage from './pages/errors/QuotaExceededPage';
+
 import apiClient from './services/apiClient';
 
 
@@ -50,6 +56,9 @@ function getInitialRoute() {
   if (path === '/pricing') return 'pricing';
   if (path === '/docs') return 'docs';
   if (path === '/auth') return 'auth';
+  if (path === '/403') return 'error-403';
+  if (path === '/500') return 'error-500';
+  if (path === '/quota-exceeded') return 'error-429';
   if (path.startsWith('/console')) {
     return 'console-overview';
   }
@@ -192,7 +201,7 @@ function AppContent() {
           </main>
         </div>
       ) : (
-        /* PUBLIC VIEWS */
+        /* PUBLIC VIEWS & ERROR SCREENS */
         <main className="flex-1 max-w-7xl w-full mx-auto p-6">
           {currentRoute === 'landing' && (
             <LandingPage setCurrentRoute={setCurrentRoute} setAuthMode={setAuthMode} navigateToDocs={navigateToDocs} />
@@ -204,8 +213,11 @@ function AppContent() {
           {currentRoute === 'auth' && (
             <AuthPage authMode={authMode} setAuthMode={setAuthMode} setCurrentRoute={setCurrentRoute} />
           )}
-          {!['landing', 'pricing', 'docs', 'auth'].includes(currentRoute) && (
-            <NotFound setCurrentRoute={setCurrentRoute} />
+          {currentRoute === 'error-403' && <ForbiddenPage />}
+          {currentRoute === 'error-500' && <ServerErrorPage />}
+          {currentRoute === 'error-429' && <QuotaExceededPage />}
+          {!['landing', 'pricing', 'docs', 'auth', 'error-403', 'error-500', 'error-429'].includes(currentRoute) && (
+            <NotFoundPage />
           )}
         </main>
       )}

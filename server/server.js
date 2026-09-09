@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { AppError } = require('./utils/AppError');
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -68,16 +69,12 @@ app.use('/api/v1', gatewayRoutes);
 
 
 
-// 404 Route Not Found Handler
-app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: `Route '${req.originalUrl}' not found on this server.`,
-    errorCode: 'NOT_FOUND_ERROR'
-  });
+// Catch-All 404 Route Handler for API endpoints
+app.all('/api/*', (req, res, next) => {
+  next(new AppError(`The requested endpoint '${req.originalUrl}' does not exist on this gateway.`, 404, 'ENDPOINT_NOT_FOUND'));
 });
 
-// Centralized Error Handler Middleware
+// Centralized Error Handler Middleware (must have 4 arguments)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

@@ -19,10 +19,20 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to format errors
+// Response interceptor to format errors and handle global status redirects
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    if (error.response?.status === 403) {
+      if (window.location.pathname !== '/403') {
+        window.location.href = '/403';
+      }
+    } else if (error.response?.status === 429) {
+      if (window.location.pathname !== '/quota-exceeded') {
+        window.location.href = '/quota-exceeded';
+      }
+    }
+
     const errorPayload = error.response?.data || {
       success: false,
       message: 'Network error or server unreachable',

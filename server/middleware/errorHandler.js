@@ -1,51 +1,50 @@
-/**
- * Centralized Express Error Handling Middleware
- * Guarantees standard JSON output: { success: false, message, errorCode }
- * Prevents process crashes on unhandled errors.
- */
+const { AppError } = require('../utils/AppError');
+
 const errorHandler = (err, req, res, next) => {
-  console.error(`[Error Middleware] ${err.name || 'Error'}: ${err.message}`);
-  if (err.stack && process.env.NODE_ENV === 'development') {
-    console.error(err.stack);
+  let error = { ...err };
+  error.message = err.message;
+  error.statusCode = err.statusCode || 500;
+  error.errorCode = err.errorCode || 'INTERNAL_SERVER_ERROR';
+
+  // 1. Mongoose Bad ObjectId (CastError)
+  if (err.name === 'CastError') {
+    error = new AppError(`Resource not found with ID: ${err.value}`, 404, 'RESOURCE_NOT_FOUND');
   }
 
-  // Handle Mongoose Duplicate Key Error (e.g. unique email)
+  // 2. Mongoose Duplicate Key Error (E11000)
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue || {})[0] || 'field';
-    return res.status(409).json({
-      success: false,
-      message: `A record with this ${field} already exists.`,
-      errorCode: 'DUPLICATE_RESOURCE_ERROR'
-    });
+    error = new AppError(`Duplicate value entered for '${field}'. Please use another value.`, 409, 'DUPLICATE_RESOURCE');
   }
 
-  // Handle Mongoose Validation Errors
+  // 3. Mongoose Schema Validation Failure
   if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map(val => val.message);
-    return res.status(400).json({
-      success: false,
-      message: messages.join(', '),
-      errorCode: 'VALIDATION_ERROR'
-    });
+    const messages = Object.values(err.errors || {}).map((val) => val.message);
+    error = new AppError(`Validation failed: ${messages.join(', ')}`, 400, 'VALIDATION_ERROR');
   }
 
-  // Handle JWT Auth Errors
-  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired token. Please log in again.',
-      errorCode: 'AUTHENTICATION_ERROR'
-    });
+  // 4. JWT Verification Failures
+  if (err.name === 'JsonWebTokenError') {
+    error = new AppError('Invalid authentication token. Please sign in again.', 401, 'INVALID_TOKEN');
+  }
+  if (err.name === 'TokenExpiredError') {
+    error = new AppError('Your session has expired. Please sign in again.', 401, 'SESSION_EXPIRED');
   }
 
-  // Standard Custom Error Handling or 500 Fallback
-  const statusCode = err.statusCode || res.statusCode !== 200 ? (res.statusCode || 500) : 500;
-  const errorCode = err.errorCode || (statusCode >= 500 ? 'INTERNAL_SERVER_ERROR' : 'REQUEST_ERROR');
+  // 5. Express-Validator Array Errors
+  if (Array.isArray(err.errors) && err.errors[0]?.msg) {
+    error = new AppError(err.errors.map((e) => e.msg).join('; '), 400, 'INPUT_VALIDATION_FAILED');
+  }
 
-  res.status(statusCode).json({
+  // Log in development
+  if (process.env.NODE_ENV !== 'production' && error.statusCode === 500) {
+    console.error('SERVER EXCEPTION 💥:', err);
+  }
+
+  res.status(error.statusCode).json({
     success: false,
-    message: err.message || 'An unexpected internal error occurred.',
-    errorCode: errorCode
+    message: error.message || 'An unexpected internal error occurred on our servers.',
+    errorCode: error.errorCode
   });
 };
 

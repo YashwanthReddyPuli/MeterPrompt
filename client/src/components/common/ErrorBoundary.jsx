@@ -1,42 +1,37 @@
 import React from 'react';
+import { AlertTriangle } from 'lucide-react';
+import ErrorLayout from '../../pages/errors/ErrorLayout';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error("Uncaught React Boundary Exception:", error, errorInfo);
   }
-
-  handleReload = () => {
-    window.location.href = '/';
-  };
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center text-center py-24 px-6 min-h-screen bg-[#fafafa]">
-          <h1 className="text-4xl font-extrabold text-zinc-900 mb-3 tracking-tight">Something Went Wrong</h1>
-          <p className="text-sm text-zinc-500 mb-6 max-w-md">
-            An unexpected application error occurred. Click below to clear corrupt state and return to home.
-          </p>
-          <button
-            type="button"
-            onClick={this.handleReload}
-            className="px-5 py-2.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
-          >
-            Back to Home
-          </button>
-        </div>
+        <ErrorLayout 
+          code="500" 
+          title="Application Encountered an Error" 
+          description={this.state.error?.message || "A client-side exception occurred. Refreshing the session should resolve the rendering issue."} 
+          icon={AlertTriangle} 
+          actionText="Reload Workspace" 
+          onAction={() => {
+            this.setState({ hasError: false, error: null });
+            window.location.href = '/console';
+          }} 
+        />
       );
     }
-
     return this.props.children;
   }
 }
