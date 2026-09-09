@@ -11,9 +11,27 @@ const { dispatchBillingEvent } = require('../utils/eventBus');
  * @desc    Customer subscribes to a plan (Module 3)
  * @access  Private (Customer)
  */
+// Helper to calculate total cycle price for a plan
+const getCyclePrice = (plan, cycle) => {
+  const targetCycle = cycle || plan.billingCycle || 'monthly';
+  const isAnnual = targetCycle === 'annual' || targetCycle === 'yearly';
+  const basePrice = plan.priceUSD !== undefined ? plan.priceUSD : (plan.price || 19.99);
+
+  if (isAnnual) {
+    // 20% discount annualized: monthly * 0.8 * 12
+    return Number(((basePrice * 0.8) * 12).toFixed(2));
+  }
+  return Number(basePrice.toFixed(2));
+};
+
+/**
+ * @route   POST /api/subscriptions
+ * @desc    Customer subscribes to a plan (Module 3)
+ * @access  Private (Customer)
+ */
 const createSubscription = async (req, res, next) => {
   try {
-    const { planId, currency } = req.body;
+    const { planId, currency, billingCycle: reqCycle } = req.body;
     const customerId = req.user._id;
 
     let plan = null;
@@ -26,7 +44,6 @@ const createSubscription = async (req, res, next) => {
     }
 
     if (!plan) {
-      // Fallback auto-creation if database has no plan documents
       plan = await Plan.create({
         name: 'Starter Plan',
         description: 'Default Starter Tier',
@@ -57,9 +74,16 @@ const createSubscription = async (req, res, next) => {
       });
     }
 
+    const targetCycle = reqCycle || plan.billingCycle || 'monthly';
+    const fullPlanAmount = getCyclePrice(plan, targetCycle);
+
     const now = new Date();
-    const periodDays = plan.billingCycle === 'yearly' ? 365 : 30;
-    const currentPeriodEnd = new Date(now.getTime() + periodDays * 24 * 60 * 60 * 1000);
+    const currentPeriodEnd = new Date(now);
+    if (targetCycle === 'annual' || targetCycle === 'yearly') {
+      currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
+    } else {
+      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+    }
 
     const subscription = await Subscription.create({
       customerId,
@@ -73,32 +97,38 @@ const createSubscription = async (req, res, next) => {
       auditTrail: [{
         action: 'CREATED',
         newPlanId: plan._id,
-        note: `Initial subscription to plan '${plan.name}' (${plan.billingCycle}).`
+        note: `Initial subscription to plan '${plan.name}' (${targetCycle}).`
       }]
     });
 
     const populatedSub = await Subscription.findById(subscription._id).populate('planId');
 
+    const cycleLabel = targetCycle === 'annual' || targetCycle === 'yearly' ? 'Annual' : 'Monthly';
+    const invoiceDescription = `Initial Subscription: ${plan.name} (${cycleLabel})`;
     const invoiceNumber = `SUB-${Date.now().toString().slice(-6)}`;
+
     const invoice = await Invoice.create({
       customerId,
       invoiceNumber,
-      amount: plan.priceUSD || 19.99,
+      amount: fullPlanAmount,
       currency: currency || 'USD',
       type: 'subscription',
-      description: `Subscription to ${plan.name} Plan`,
+      description: invoiceDescription,
       status: 'Paid',
       date: now
     });
+
+    const userName = req.user.name || req.user.email || 'Customer';
 
     // Dispatch Billing Event
     await dispatchBillingEvent({
       type: 'customer.subscription.created',
       customerId: req.user._id,
+      summary: `${userName} subscribed to ${plan.name} (${cycleLabel}) for $${fullPlanAmount.toFixed(2)}`,
       object: {
         id: subscription._id,
         plan: plan.name,
-        billingCycle: plan.billingCycle || 'monthly',
+        billingCycle: targetCycle,
         status: 'active',
         currentPeriodEnd: subscription.currentPeriodEnd
       },
@@ -108,6 +138,7 @@ const createSubscription = async (req, res, next) => {
     await dispatchBillingEvent({
       type: 'invoice.payment_succeeded',
       customerId: req.user._id,
+      summary: `Payment of $${invoice.amount.toFixed(2)} processed for ${invoiceDescription}`,
       object: {
         invoiceId: invoice.invoiceNumber,
         amount: invoice.amount,
@@ -164,7 +195,7 @@ const getCurrentSubscription = async (req, res, next) => {
  */
 const changePlan = async (req, res, next) => {
   try {
-    const { newPlanId, billingCycle: newCycle } = req.body;
+    const { newPlanId, billingCycle: reqCycle } = req.body;
     const subscriptionId = req.params.id;
 
     const subscription = await Subscription.findById(subscriptionId).populate('planId');
@@ -176,7 +207,6 @@ const changePlan = async (req, res, next) => {
       });
     }
 
-    // Verify ownership or admin access
     if (subscription.customerId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -194,58 +224,89 @@ const changePlan = async (req, res, next) => {
       });
     }
 
-    const currentPlanId = subscription.planId?._id || subscription.planId;
-    const oldPlanName = subscription.planId?.name || 'Previous Plan';
+    const targetCycle = reqCycle || newPlan.billingCycle || 'monthly';
     const oldCycle = subscription.planId?.billingCycle || 'monthly';
-
-    // Perform proration calculation
     const oldPlan = subscription.planId || newPlan;
-    const proration = calculateProration({
-      oldPlan,
-      newPlan,
-      periodStart: subscription.currentPeriodStart,
-      periodEnd: subscription.currentPeriodEnd,
-      now: new Date()
-    });
+    const oldPlanName = oldPlan.name || 'Previous Plan';
 
-    const oldPlanId = currentPlanId;
+    const oldCyclePrice = getCyclePrice(oldPlan, oldCycle);
+    const newCyclePrice = getCyclePrice(newPlan, targetCycle);
+
+    // Calculate Proration Credit from previous subscription if mid-cycle
+    let prorationCredit = 0;
+    const now = new Date();
+    if (subscription.currentPeriodEnd && subscription.currentPeriodEnd > now && subscription.currentPeriodStart) {
+      const totalDuration = subscription.currentPeriodEnd.getTime() - subscription.currentPeriodStart.getTime();
+      const remainingTime = Math.max(0, subscription.currentPeriodEnd.getTime() - now.getTime());
+      if (totalDuration > 0) {
+        const fractionRemaining = remainingTime / totalDuration;
+        prorationCredit = Number((oldCyclePrice * fractionRemaining).toFixed(2));
+      }
+    }
+
+    const netAmountCharged = Math.max(0, Number((newCyclePrice - prorationCredit).toFixed(2)));
+
+    // Calculate new currentPeriodEnd
+    const newPeriodEnd = new Date(now);
+    if (targetCycle === 'annual' || targetCycle === 'yearly') {
+      newPeriodEnd.setFullYear(newPeriodEnd.getFullYear() + 1);
+    } else {
+      newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
+    }
+
+    const cycleLabel = targetCycle === 'annual' || targetCycle === 'yearly' ? 'Annual' : 'Monthly';
+    let invoiceDescription = "";
+    let actionType = "UPGRADE";
+
+    if (oldPlan.name === newPlan.name && oldCycle !== targetCycle) {
+      invoiceDescription = `Tenure Change: ${newPlan.name} switched to ${cycleLabel}`;
+      actionType = "TENURE_CHANGE";
+    } else {
+      actionType = newCyclePrice >= oldCyclePrice ? 'Upgrade' : 'Downgrade';
+      invoiceDescription = `Plan ${actionType}: ${oldPlanName} → ${newPlan.name} (${cycleLabel})`;
+    }
+
+    const oldPlanId = oldPlan._id;
     subscription.planId = newPlan._id;
-    subscription.prorationBalanceUSD += proration.prorationBalanceUSD;
-    subscription.prorationBalanceINR += proration.prorationBalanceINR;
+    subscription.currentPeriodStart = now;
+    subscription.currentPeriodEnd = newPeriodEnd;
+    subscription.prorationBalanceUSD += Number((newCyclePrice - prorationCredit).toFixed(2));
 
     subscription.auditTrail.push({
-      action: proration.action,
+      action: actionType.toUpperCase().includes('DOWNGRADE') ? 'DOWNGRADE' : 'UPGRADE',
       oldPlanId,
       newPlanId: newPlan._id,
-      prorationBalanceUSD: proration.prorationBalanceUSD,
-      prorationBalanceINR: proration.prorationBalanceINR,
-      note: proration.auditNote,
-      timestamp: new Date()
+      prorationBalanceUSD: Number((newCyclePrice - prorationCredit).toFixed(2)),
+      note: `Mid-cycle switch to ${newPlan.name} (${cycleLabel}). Net charged: $${netAmountCharged.toFixed(2)} (Proration credit: $${prorationCredit.toFixed(2)}).`,
+      timestamp: now
     });
 
     const invoiceNumber = `SUB-${Date.now().toString().slice(-6)}`;
     const invoice = await Invoice.create({
       customerId: subscription.customerId,
       invoiceNumber,
-      amount: newPlan.priceUSD || 19.99,
+      amount: netAmountCharged,
       currency: subscription.currency || 'USD',
-      type: proration.action === 'UPGRADE' ? 'subscription' : 'proration',
-      description: `Plan switch to ${newPlan.name} (${proration.action})`,
+      type: actionType.toUpperCase().includes('DOWNGRADE') ? 'proration' : 'subscription',
+      description: invoiceDescription,
       status: 'Paid',
-      date: new Date()
+      date: now
     });
 
     await subscription.save();
     const updatedSub = await Subscription.findById(subscription._id).populate('planId');
 
+    const userName = req.user.name || req.user.email || 'Customer';
+
     // Dispatch Billing Event
     await dispatchBillingEvent({
       type: 'customer.subscription.updated',
       customerId: req.user._id,
+      summary: `${userName} updated to ${newPlan.name} (${cycleLabel}) for $${netAmountCharged.toFixed(2)}`,
       object: {
         id: subscription._id,
         plan: newPlan.name,
-        billingCycle: newCycle || newPlan.billingCycle || 'monthly',
+        billingCycle: targetCycle,
         status: 'active',
         currentPeriodEnd: subscription.currentPeriodEnd
       },
@@ -259,7 +320,6 @@ const changePlan = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: `Plan successfully updated to '${newPlan.name}'.`,
-      prorationSummary: proration,
       invoice,
       data: updatedSub
     });
@@ -307,13 +367,17 @@ const cancelSubscription = async (req, res, next) => {
 
     await subscription.save();
 
+    const userName = req.user.name || req.user.email || 'Customer';
+    const planName = subscription.planId?.name || 'Current Plan';
+
     // Dispatch Billing Event
     await dispatchBillingEvent({
       type: 'customer.subscription.cancel_scheduled',
       customerId: req.user._id,
+      summary: `${userName} scheduled cancellation for ${planName} at period end`,
       object: {
         id: subscription._id,
-        plan: subscription.planId?.name || 'Current Plan',
+        plan: planName,
         cancelAtPeriodEnd: true,
         currentPeriodEnd: subscription.currentPeriodEnd
       },

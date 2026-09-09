@@ -57,9 +57,11 @@ router.post('/apply', protect, async (req, res, next) => {
     await coupon.save();
 
     if (req.user) {
+      const userName = req.user.name || req.user.email || 'Customer';
       await dispatchBillingEvent({
         type: 'customer.discount.applied',
         customerId: req.user._id,
+        summary: `${userName} applied coupon ${coupon.code} (${coupon.discountPercent}% OFF)`,
         object: {
           code: coupon.code,
           discountPercent: coupon.discountPercent

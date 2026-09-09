@@ -54,25 +54,43 @@ export default function AdminEventsView() {
               const isExpanded = expandedEventId === evt._id;
               return (
                 <div key={evt._id} className="hover:bg-zinc-50/70 transition-colors">
-                  <div
-                    onClick={() => setExpandedEventId(isExpanded ? null : evt._id)}
-                    className="p-3.5 flex items-center justify-between cursor-pointer text-xs"
-                  >
+                  <div className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className={`px-2.5 py-0.5 rounded-md font-mono text-[11px] font-semibold border ${getEventBadge(evt.type)}`}>
-                        {evt.type}
+                      {/* Event Badge */}
+                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase ${
+                        evt.type.includes('failed') ? 'bg-rose-100 text-rose-700 border border-rose-200' :
+                        evt.type.includes('cancel') ? 'bg-amber-100 text-amber-700 border border-amber-200' :
+                        'bg-indigo-50 text-[#5865f2] border border-indigo-100'
+                      }`}>
+                        {evt.type.replace('customer.subscription.', '').replace('invoice.', '').replace('_', ' ')}
                       </span>
-                      <span className="font-mono text-zinc-500 text-[11px]">{evt.eventId}</span>
+
+                      {/* Human-Readable Message */}
+                      <div>
+                        <p className="text-xs font-semibold text-zinc-900">
+                          {evt.summary || (
+                            evt.data?.previousAttributes
+                              ? `Switched from ${evt.data.previousAttributes.plan} (${evt.data.previousAttributes.billingCycle}) to ${evt.data.object.plan} (${evt.data.object.billingCycle})`
+                              : `Subscribed to ${evt.data?.object?.plan || 'Plan'}`
+                          )}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                          Customer: <span className="text-zinc-700 font-medium">{evt.customerId?.email || 'N/A'}</span>
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                      <span className="text-zinc-600 font-medium text-[11px]">
-                        {evt.customerId?.email || 'System Customer'}
+                    <div className="flex items-center gap-4">
+                      <span className="text-[11px] text-zinc-400 font-mono">
+                        {new Date(evt.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
-                      <span className="font-mono text-zinc-400 text-[11px]">
-                        {new Date(evt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </span>
-                      <span className="text-zinc-400 font-mono text-xs">{isExpanded ? '▲' : '▼'}</span>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedEventId(isExpanded ? null : evt._id)}
+                        className="text-xs font-semibold text-[#5865f2] hover:underline cursor-pointer"
+                      >
+                        {isExpanded ? 'Hide Details' : 'View Payload'}
+                      </button>
                     </div>
                   </div>
 
@@ -81,6 +99,7 @@ export default function AdminEventsView() {
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Raw Event Payload Data</span>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleCopyJson(evt);

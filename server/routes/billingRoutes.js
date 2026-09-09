@@ -57,6 +57,7 @@ router.post('/top-up', protect, validate(topUpRules), async (req, res, next) => 
     await dispatchBillingEvent({
       type: 'invoice.payment_succeeded',
       customerId: user._id,
+      summary: `${user.name || user.email} topped up credit balance by $${amount.toFixed(2)}`,
       object: {
         invoiceId: invoice.invoiceNumber,
         amount: invoice.amount,
@@ -148,9 +149,11 @@ const payInvoiceHandler = async (req, res, next) => {
     await invoice.save();
 
     const eventType = normalizedStatus === 'failed' ? 'invoice.payment_failed' : 'invoice.payment_succeeded';
+    const actionLabel = normalizedStatus === 'failed' ? `Payment failed ($${invoice.amount.toFixed(2)})` : `Payment of $${invoice.amount.toFixed(2)} succeeded`;
     await dispatchBillingEvent({
       type: eventType,
       customerId: invoice.customerId,
+      summary: `${actionLabel} for invoice ${invoice.invoiceNumber}`,
       object: {
         invoiceId: invoice.invoiceNumber,
         amount: invoice.amount,

@@ -28,6 +28,10 @@ const billingEventSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    summary: {
+      type: String,
+      default: null
+    },
     data: {
       object: {
         type: mongoose.Schema.Types.Mixed,

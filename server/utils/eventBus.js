@@ -1,10 +1,11 @@
 const BillingEvent = require('../models/BillingEvent');
 
-async function dispatchBillingEvent({ type, customerId, object, previousAttributes = null, req = null }) {
+async function dispatchBillingEvent({ type, customerId, summary = null, object, previousAttributes = null, req = null }) {
   try {
     await BillingEvent.create({
       type,
       customerId,
+      summary,
       data: {
         object,
         previousAttributes
