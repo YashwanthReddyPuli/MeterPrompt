@@ -47,9 +47,9 @@ export default function Profile({ setCurrentRoute }) {
             </div>
             <div>
               <span className="text-zinc-500 block text-[10px] uppercase font-extrabold tracking-wider mb-1">Account Role</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary font-bold text-[10px] rounded-full uppercase tracking-wider">
-                <Shield size={12} />
-                {user?.role || 'customer'}
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${user?.role === 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'}`}>
+                <Shield size={12} className="mr-1 inline" />
+                {user?.role === 'admin' ? 'Admin' : 'Developer'}
               </span>
             </div>
           </div>

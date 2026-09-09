@@ -1,3 +1,5 @@
+import { Database } from "lucide-react";
+
 export const formatCurrency = (amount, currency = 'USD') => {
   const val = Number(amount) || 0;
   if (currency === 'INR') {

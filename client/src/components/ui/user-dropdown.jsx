@@ -70,12 +70,12 @@ export function UserDropdown({ user, onAction }) {
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-zinc-900 leading-none">{displayName}</span>
               {role === "admin" ? (
-                <span className="bg-[#5865f2] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                  ADMIN
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 uppercase">
+                  Admin
                 </span>
               ) : (
-                <span className="bg-zinc-100 text-zinc-600 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider border border-zinc-200">
-                  DEV
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 uppercase">
+                  Developer
                 </span>
               )}
             </div>
@@ -90,9 +90,9 @@ export function UserDropdown({ user, onAction }) {
           <p className="text-xs font-extrabold text-zinc-900 truncate">{displayName}</p>
           <p className="text-[10px] text-zinc-500 font-mono truncate">{displayEmail}</p>
           <div className="mt-1.5 flex items-center justify-between">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Role Permissions</span>
-            <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}`}>
-              {role === 'admin' ? 'Administrative Control' : 'Developer Access'}
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Role</span>
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${role === 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'}`}>
+              {role === 'admin' ? 'Admin' : 'Developer'}
             </span>
           </div>
         </div>

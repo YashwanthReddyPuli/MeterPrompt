@@ -30,7 +30,7 @@ export default function Sidebar({ currentRoute, setCurrentRoute }) {
   const navItems = user?.role === 'admin' ? adminNavItems : customerNavItems;
 
   return (
-    <aside className="group relative z-20 shrink-0 bg-white border-r border-zinc-200 transition-all duration-300 ease-in-out w-16 hover:w-64 flex flex-col justify-between py-5 overflow-hidden shadow-xs hover:shadow-lg">
+    <aside className="group relative z-20 shrink-0 bg-white border-r border-zinc-200 transition-all duration-300 ease-in-out w-16 hover:w-64 flex flex-col justify-between py-5 overflow-y-auto h-full shadow-xs hover:shadow-lg">
       {/* Upper Navigation & Brand */}
 
       <div className="flex flex-col gap-6">

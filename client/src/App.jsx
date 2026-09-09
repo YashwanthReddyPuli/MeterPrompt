@@ -146,7 +146,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className={`min-h-screen bg-background text-foreground flex flex-col font-sans ${isConsoleRoute ? 'h-screen overflow-hidden' : ''}`}>
       {/* GLOBAL NAVBAR */}
       <Navbar 
         currentRoute={currentRoute}
@@ -155,41 +155,41 @@ function AppContent() {
         setAuthMode={setAuthMode}
       />
 
-      {/* CONSOLE LAYOUT WITH NON-OVERLAPPING PUSH DRAWER SIDEBAR */}
+      {/* CONSOLE LAYOUT WITH INDEPENDENTLY SCROLLING CANVAS */}
       {isConsoleRoute ? (
-        <div className="flex-1 flex w-full relative overflow-x-hidden bg-[#fbfbfb]">
+        <div className="flex-1 flex w-full relative overflow-hidden bg-[#fbfbfb]">
           <Sidebar currentRoute={currentRoute} setCurrentRoute={setCurrentRoute} />
           
-          <main className="flex-1 min-w-0 p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto space-y-6">
-            {/* Customer Routes */}
+          <main className="flex-1 min-w-0 h-full overflow-y-auto p-6 md:p-8">
+            <div className="max-w-6xl mx-auto space-y-6 pb-16">
+              {/* Customer Routes */}
 
-            {currentRoute === 'console-overview' && (
-              <Overview setCurrentRoute={setCurrentRoute} setCreateKeyModalOpen={setCreateKeyModalOpen} />
-            )}
-            {currentRoute === 'console-keys' && (
-              <ApiKeys newRawKey={newRawKey} setCreateKeyModalOpen={setCreateKeyModalOpen} />
-            )}
-            {currentRoute === 'console-profile' && (
-              <Profile setCurrentRoute={setCurrentRoute} />
-            )}
-            {currentRoute === 'console-activity' && <Activity />}
-            {currentRoute === 'console-logs' && <Logs />}
-            {currentRoute === 'console-credits' && (
-              <Credits userCredits={userCredits} setUserCredits={setUserCredits} setAddCreditsModalOpen={setAddCreditsModalOpen} setCurrentRoute={setCurrentRoute} />
-            )}
-            {currentRoute === 'console-notifications' && <Notifications />}
-            {currentRoute === 'console-preferences' && <Preferences />}
+              {currentRoute === 'console-overview' && (
+                <Overview setCurrentRoute={setCurrentRoute} setCreateKeyModalOpen={setCreateKeyModalOpen} />
+              )}
+              {currentRoute === 'console-keys' && (
+                <ApiKeys newRawKey={newRawKey} setCreateKeyModalOpen={setCreateKeyModalOpen} />
+              )}
+              {currentRoute === 'console-profile' && (
+                <Profile setCurrentRoute={setCurrentRoute} />
+              )}
+              {currentRoute === 'console-activity' && <Activity />}
+              {currentRoute === 'console-logs' && <Logs />}
+              {currentRoute === 'console-credits' && (
+                <Credits userCredits={userCredits} setUserCredits={setUserCredits} setAddCreditsModalOpen={setAddCreditsModalOpen} setCurrentRoute={setCurrentRoute} />
+              )}
+              {currentRoute === 'console-notifications' && <Notifications />}
+              {currentRoute === 'console-preferences' && <Preferences />}
 
-            {/* Admin Dedicated Control Center Routes */}
-            {currentRoute === 'console-admin-overview' && <AdminOverview />}
-            {currentRoute === 'console-admin-coupons' && <AdminCoupons />}
-            {currentRoute === 'console-admin-events' && <AdminEvents />}
-            {currentRoute === 'console-admin-users' && <AdminUsers />}
-            {currentRoute === 'console-admin-plans' && <AdminPlans />}
-            {currentRoute === 'console-admin-dunning' && <AdminDunning />}
+              {/* Admin Dedicated Control Center Routes */}
+              {currentRoute === 'console-admin-overview' && <AdminOverview />}
+              {currentRoute === 'console-admin-coupons' && <AdminCoupons />}
+              {currentRoute === 'console-admin-events' && <AdminEvents />}
+              {currentRoute === 'console-admin-users' && <AdminUsers />}
+              {currentRoute === 'console-admin-plans' && <AdminPlans />}
+              {currentRoute === 'console-admin-dunning' && <AdminDunning />}
+            </div>
           </main>
-
-
         </div>
       ) : (
         /* PUBLIC VIEWS */
@@ -210,8 +210,8 @@ function AppContent() {
         </main>
       )}
 
-      {/* FOOTER */}
-      <Footer />
+      {/* FOOTER (rendered for public routes) */}
+      {!isConsoleRoute && <Footer />}
 
       {/* MODALS */}
       <SearchModal 

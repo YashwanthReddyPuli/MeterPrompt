@@ -148,8 +148,8 @@ export default function AdminUsers() {
                       <div className="text-[11px] text-zinc-500 font-mono">{u.email}</div>
                     </td>
                     <td className="py-3.5 px-5">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-zinc-100 text-zinc-600'}`}>
-                        {u.role}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${u.role === 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'}`}>
+                        {u.role === 'admin' ? 'Admin' : 'Developer'}
                       </span>
                     </td>
                     <td className="py-3.5 px-5 font-semibold text-zinc-800">
