@@ -199,34 +199,12 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td className="py-3.5 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openDrilldown(u)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
-                        >
-                          <Eye size={13} /> Inspect
-                        </button>
-                        {u.role !== 'admin' && (
-                          <button
-                            onClick={() => {
-                              if (u.isSuspended) {
-                                handleUnsuspend(u);
-                              } else {
-                                setUserToSuspend(u);
-                              }
-                            }}
-                            title={u.isSuspended ? 'Reactivate user account' : 'Suspend user account'}
-                            className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
-                              u.isSuspended
-                                ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                                : 'border-rose-200 text-rose-700 hover:bg-rose-50'
-                            }`}
-                          >
-                            <ShieldAlert size={13} />
-                            {u.isSuspended ? 'Reactivate' : 'Suspend'}
-                          </button>
-                        )}
-                      </div>
+                      <button
+                        onClick={() => openDrilldown(u)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+                      >
+                        <Eye size={13} /> Inspect
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -324,7 +302,7 @@ export default function AdminUsers() {
                         className={`w-full py-2 px-3 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${selectedUser.isSuspended ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'}`}
                       >
                         <ShieldAlert size={14} />
-                        {selectedUser.isSuspended ? 'Reactivate Account (Mark Active)' : 'Suspend Account (Mark Inactive)'}
+                        {selectedUser.isSuspended ? 'Reactivate Account' : 'Suspend Account'}
                       </button>
                     </div>
                   </div>
