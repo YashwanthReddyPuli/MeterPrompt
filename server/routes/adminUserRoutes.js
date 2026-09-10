@@ -30,7 +30,7 @@ router.get('/users', protect, requireRole('admin'), async (req, res, next) => {
           email: u.email,
           role: u.role,
           creditsBalance: u.creditsBalance || 0,
-          status: u.isSuspended ? 'Suspended' : 'Active',
+          status: u.isSuspended ? 'Inactive' : 'Active',
           isSuspended: Boolean(u.isSuspended),
           subscription: sub || null,
           currentPlanName: sub?.planId?.name || 'No Active Plan',
@@ -90,6 +90,7 @@ router.get('/users/:id', protect, requireRole('admin'), async (req, res, next) =
           email: user.email,
           role: user.role,
           creditsBalance: user.creditsBalance || 0,
+          status: user.isSuspended ? 'Inactive' : 'Active',
           isSuspended: Boolean(user.isSuspended),
           createdAt: user.createdAt
         },
@@ -137,12 +138,13 @@ router.put('/users/:id/action', protect, requireRole('admin'), async (req, res, 
 
     return res.status(200).json({
       success: true,
-      message: `User action '${action}' processed successfully.`,
+      message: `User account ${user.isSuspended ? 'suspended and set to Inactive' : 'reactivated and set to Active'}.`,
       data: {
         _id: user._id,
         name: user.name,
         email: user.email,
         creditsBalance: user.creditsBalance,
+        status: user.isSuspended ? 'Inactive' : 'Active',
         isSuspended: user.isSuspended
       }
     });

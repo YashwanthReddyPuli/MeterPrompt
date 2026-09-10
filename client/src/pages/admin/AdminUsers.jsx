@@ -4,6 +4,7 @@ import apiClient from '../../services/apiClient';
 import { useAuth } from '../../context/AuthContext';
 import { downloadInvoicePdf } from '../../utils/generateInvoicePdf';
 import { Search, Eye, ShieldAlert, CheckCircle, CreditCard, Key, FileText, X } from 'lucide-react';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 export default function AdminUsers() {
   const { showNotification } = useAuth();
@@ -15,6 +16,10 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [drilldownData, setDrilldownData] = useState(null);
   const [drilldownLoading, setDrilldownLoading] = useState(false);
+
+  // Suspension Confirmation Modal State
+  const [userToSuspend, setUserToSuspend] = useState(null);
+  const [suspendLoading, setSuspendLoading] = useState(false);
 
   // Credit balance adjustment modal state inside drilldown
   const [newCreditAmount, setNewCreditAmount] = useState('');
@@ -74,22 +79,48 @@ export default function AdminUsers() {
     }
   };
 
-  const handleToggleSuspend = async () => {
-    if (!selectedUser) return;
+  const handleConfirmSuspend = async () => {
+    if (!userToSuspend) return;
+    setSuspendLoading(true);
     try {
-      const newStatus = !selectedUser.isSuspended;
-      const res = await apiClient.put(`/admin/users/${selectedUser._id}/action`, {
+      const res = await apiClient.put(`/admin/users/${userToSuspend._id}/action`, {
         action: 'toggle_suspend',
-        isSuspended: newStatus
+        isSuspended: true
       });
 
       if (res.success) {
-        showNotification('success', `User account ${newStatus ? 'suspended' : 'unsuspended'} successfully.`);
+        showNotification('success', `User account ${userToSuspend.name} has been suspended. Status set to Inactive.`);
+        setUserToSuspend(null);
         await fetchUsers();
-        openDrilldown({ ...selectedUser, isSuspended: newStatus });
+        if (selectedUser && selectedUser._id === userToSuspend._id) {
+          setSelectedUser(prev => ({ ...prev, isSuspended: true }));
+          openDrilldown({ ...selectedUser, isSuspended: true });
+        }
       }
     } catch (err) {
-      showNotification('error', err.message || 'Failed to update user status.');
+      showNotification('error', err.message || 'Failed to suspend user account.');
+    } finally {
+      setSuspendLoading(false);
+    }
+  };
+
+  const handleUnsuspend = async (targetUser) => {
+    try {
+      const res = await apiClient.put(`/admin/users/${targetUser._id}/action`, {
+        action: 'toggle_suspend',
+        isSuspended: false
+      });
+
+      if (res.success) {
+        showNotification('success', `User account ${targetUser.name} reactivated. Status set to Active.`);
+        await fetchUsers();
+        if (selectedUser && selectedUser._id === targetUser._id) {
+          setSelectedUser(prev => ({ ...prev, isSuspended: false }));
+          openDrilldown({ ...selectedUser, isSuspended: false });
+        }
+      }
+    } catch (err) {
+      showNotification('error', err.message || 'Failed to reactivate user account.');
     }
   };
 
@@ -164,16 +195,38 @@ export default function AdminUsers() {
                     <td className="py-3.5 px-5 font-mono text-zinc-700">{u.keyCount} keys</td>
                     <td className="py-3.5 px-5">
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${u.isSuspended ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {u.isSuspended ? '● Suspended' : '● Active'}
+                        {u.isSuspended ? '● Inactive' : '● Active'}
                       </span>
                     </td>
                     <td className="py-3.5 px-5 text-right">
-                      <button
-                        onClick={() => openDrilldown(u)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
-                      >
-                        <Eye size={13} /> Inspect
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openDrilldown(u)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#5865f2] hover:bg-[#4752c4] text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+                        >
+                          <Eye size={13} /> Inspect
+                        </button>
+                        {u.role !== 'admin' && (
+                          <button
+                            onClick={() => {
+                              if (u.isSuspended) {
+                                handleUnsuspend(u);
+                              } else {
+                                setUserToSuspend(u);
+                              }
+                            }}
+                            title={u.isSuspended ? 'Reactivate user account' : 'Suspend user account'}
+                            className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                              u.isSuspended
+                                ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                : 'border-rose-200 text-rose-700 hover:bg-rose-50'
+                            }`}
+                          >
+                            <ShieldAlert size={13} />
+                            {u.isSuspended ? 'Reactivate' : 'Suspend'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -196,7 +249,12 @@ export default function AdminUsers() {
             {/* Drawer Header */}
             <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
               <div>
-                <h3 className="text-lg font-extrabold text-[#1e1f24]">{selectedUser.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-extrabold text-[#1e1f24]">{selectedUser.name}</h3>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${selectedUser.isSuspended ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                    {selectedUser.isSuspended ? '● Inactive' : '● Active'}
+                  </span>
+                </div>
                 <p className="text-xs text-zinc-500 font-mono">{selectedUser.email} • ID: {selectedUser._id}</p>
               </div>
               <button 
@@ -256,11 +314,17 @@ export default function AdminUsers() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-zinc-700 block">Account Status Control</label>
                       <button
-                        onClick={handleToggleSuspend}
+                        onClick={() => {
+                          if (selectedUser.isSuspended) {
+                            handleUnsuspend(selectedUser);
+                          } else {
+                            setUserToSuspend(selectedUser);
+                          }
+                        }}
                         className={`w-full py-2 px-3 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${selectedUser.isSuspended ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'}`}
                       >
                         <ShieldAlert size={14} />
-                        {selectedUser.isSuspended ? 'Unsuspend Account' : 'Suspend Account'}
+                        {selectedUser.isSuspended ? 'Reactivate Account (Mark Active)' : 'Suspend Account (Mark Inactive)'}
                       </button>
                     </div>
                   </div>
@@ -373,6 +437,19 @@ export default function AdminUsers() {
         </div>,
         document.body
       )}
+
+      {/* DESTRUCTIVE ACCOUNT SUSPENSION CONFIRMATION MODAL */}
+      <ConfirmModal
+        isOpen={Boolean(userToSuspend)}
+        title="Suspend Developer Account"
+        message={`Are you sure you want to suspend ${userToSuspend?.name} (${userToSuspend?.email})? This action is destructive: the account status will be set to Inactive, and active API gateway inference requests will be halted.`}
+        confirmText="Suspend Account"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={suspendLoading}
+        onConfirm={handleConfirmSuspend}
+        onCancel={() => setUserToSuspend(null)}
+      />
     </div>
   );
 }

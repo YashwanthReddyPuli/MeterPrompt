@@ -48,6 +48,14 @@ const handleChatCompletion = async (req, res, next) => {
       });
     }
 
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is suspended/inactive. API access has been temporarily disabled.',
+        errorCode: 'ACCOUNT_SUSPENDED'
+      });
+    }
+
     const { model, messages } = req.body;
     const promptText = (messages && Array.isArray(messages)) 
       ? messages.map(m => m.content).join(' ') 
