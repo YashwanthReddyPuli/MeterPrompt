@@ -115,22 +115,28 @@ function AppContent() {
     if (user) {
       if (user.role !== 'admin' && currentRoute.startsWith('console-admin-')) {
         setCurrentRoute('console-overview');
+      } else if (user.role === 'admin' && currentRoute === 'console-overview') {
+        setCurrentRoute('console-admin-overview');
       }
     }
-  }, [user, isConsoleRoute]);
+  }, [user, isConsoleRoute, currentRoute]);
 
   const navigateToConsole = (subRoute) => {
     if (!user) {
       setAuthMode('login');
       setCurrentRoute('auth');
-      showNotification('info', 'Authentication required to access Developer Console.');
+      showNotification('info', 'Authentication required to access Console.');
       return;
     }
     
     // Allow admins to navigate to any console route (both admin-specific and general developer routes)
     const targetRoute = subRoute.startsWith('console-') ? subRoute : `console-${subRoute}`;
     if (user.role === 'admin') {
-      setCurrentRoute(targetRoute);
+      if (targetRoute === 'console-overview') {
+        setCurrentRoute('console-admin-overview');
+      } else {
+        setCurrentRoute(targetRoute);
+      }
     } else {
       if (targetRoute.startsWith('console-admin-')) {
         setCurrentRoute('console-overview');

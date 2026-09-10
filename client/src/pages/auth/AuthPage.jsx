@@ -23,7 +23,7 @@ export default function AuthPage({ authMode, setAuthMode, setCurrentRoute }) {
 
     if (res && res.success) {
       if (form.role === 'admin' || (res.user && res.user.role === 'admin')) {
-        setCurrentRoute('console-overview');
+        setCurrentRoute('console-admin-overview');
       } else {
         setCurrentRoute('console-overview');
       }
