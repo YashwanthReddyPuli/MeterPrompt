@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Key, Copy, Check, Trash2, Terminal, AlertTriangle, ShieldCheck } from 'lucide-react';
 import apiClient from '../../services/apiClient';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 export default function ApiKeys() {
   const { user, token, fetchUserProfile, showNotification } = useAuth();
@@ -15,6 +16,10 @@ export default function ApiKeys() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  // Revoke Key Confirmation State
+  const [revokeKeyTarget, setRevokeKeyTarget] = useState(null);
+  const [isRevoking, setIsRevoking] = useState(false);
 
   // Single-flight submission handler preventing duplicate key generation
   const handleGenerateKey = async (e) => {
