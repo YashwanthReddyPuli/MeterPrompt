@@ -7,7 +7,7 @@ export default function Overview({ setCurrentRoute, setCreateKeyModalOpen }) {
   const { subscription, user } = useAuth();
 
   const hasSub = Boolean(subscription && subscription.planId);
-  const planName = hasSub ? (subscription.planId.name || 'Starter') : 'No Active Plan';
+  const planName = hasSub ? (subscription.planId.name || 'Free') : 'Free';
   const planPrice = hasSub ? (subscription.planId.priceUSD || 19.99) : 0;
   const prorationBalance = subscription?.prorationBalanceUSD || 0.00;
 

@@ -124,10 +124,16 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users
+    .filter(u => u.role !== 'admin')
+    .filter(u => {
+      const email = (u.email || '').toLowerCase();
+      return !email.includes('@example.com') && !email.includes('@meterprompt.io') && !email.startsWith('dev_') && !email.startsWith('admin_');
+    })
+    .filter(u => 
+      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <div className="space-y-6">
@@ -158,7 +164,6 @@ export default function AdminUsers() {
             <thead>
               <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-semibold uppercase tracking-wider">
                 <th className="py-3.5 px-5">Customer Name & Email</th>
-                <th className="py-3.5 px-5">Role</th>
                 <th className="py-3.5 px-5">Current Plan Tier</th>
                 <th className="py-3.5 px-5">Credit Balance</th>
                 <th className="py-3.5 px-5">Active Keys</th>
@@ -169,7 +174,7 @@ export default function AdminUsers() {
             <tbody className="divide-y divide-zinc-200 text-zinc-700 font-medium">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-zinc-400">Loading user directory...</td>
+                  <td colSpan={6} className="py-8 text-center text-zinc-400">Loading user directory...</td>
                 </tr>
               ) : filteredUsers.length > 0 ? (
                 filteredUsers.map((u) => (
@@ -178,15 +183,10 @@ export default function AdminUsers() {
                       <div className="font-bold text-zinc-900">{u.name}</div>
                       <div className="text-[11px] text-zinc-500 font-mono">{u.email}</div>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${u.role === 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'}`}>
-                        {u.role === 'admin' ? 'Admin' : 'Developer'}
-                      </span>
-                    </td>
                     <td className="py-3.5 px-5 font-semibold text-zinc-800">
-                      {u.currentPlanName && u.currentPlanName !== 'No Active Plan' 
+                      {u.currentPlanName && u.currentPlanName !== 'Free' && u.currentPlanName !== 'No Active Plan' 
                         ? `${u.currentPlanName} (${u.billingCycle || 'monthly'})` 
-                        : (u.subscription?.planId?.name ? `${u.subscription.planId.name} (${u.subscription.planId.billingCycle || 'monthly'})` : 'Starter (Free / Default)')}
+                        : (u.subscription?.planId?.name ? `${u.subscription.planId.name} (${u.subscription.planId.billingCycle || 'monthly'})` : 'Free')}
                     </td>
 
                     <td className="py-3.5 px-5 font-mono font-bold text-emerald-700">
@@ -210,7 +210,7 @@ export default function AdminUsers() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-zinc-400">No users match query.</td>
+                  <td colSpan={6} className="py-8 text-center text-zinc-400">No users match query.</td>
                 </tr>
               )}
             </tbody>
@@ -316,11 +316,11 @@ export default function AdminUsers() {
                   <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-xs space-y-2">
                     <div>
                       <span className="text-zinc-500">Plan Tier:</span>{' '}
-                      <strong className="text-zinc-900">{drilldownData.subscription?.planId?.name || 'Starter Plan'}</strong>
+                      <strong className="text-zinc-900">{drilldownData.subscription?.planId?.name || 'Free'}</strong>
                     </div>
                     <div>
                       <span className="text-zinc-500">Billing Cycle:</span>{' '}
-                      <strong className="text-zinc-900 capitalize">{drilldownData.subscription?.planId?.billingCycle || 'monthly'}</strong>
+                      <strong className="text-zinc-900 capitalize">{drilldownData.subscription?.planId?.billingCycle || 'N/A'}</strong>
                     </div>
                     {drilldownData.subscription?.auditTrail?.length > 0 && (
                       <div className="pt-2 border-t border-zinc-200 space-y-1">

@@ -12,7 +12,11 @@ const { protect, requireRole } = require('../middleware/auth');
  */
 router.get('/users', protect, requireRole('admin'), async (req, res, next) => {
   try {
-    const users = await User.find().select('-passwordHash').sort({ createdAt: -1 }).lean();
+    const users = await User.find({
+      role: 'customer',
+      email: { $nin: [null, ''], $not: /example\.com|meterprompt\.io|^dev_|^admin_/i },
+      name: { $nin: [null, ''] }
+    }).select('-passwordHash').sort({ createdAt: -1 }).lean();
 
     const userList = await Promise.all(
       users.map(async (u) => {
@@ -33,7 +37,7 @@ router.get('/users', protect, requireRole('admin'), async (req, res, next) => {
           status: u.isSuspended ? 'Inactive' : 'Active',
           isSuspended: Boolean(u.isSuspended),
           subscription: sub || null,
-          currentPlanName: sub?.planId?.name || 'No Active Plan',
+          currentPlanName: sub?.planId?.name || 'Free',
           billingCycle: sub?.planId?.billingCycle || 'N/A',
           keyCount,
           createdAt: u.createdAt
@@ -65,6 +69,14 @@ router.get('/users/:id', protect, requireRole('admin'), async (req, res, next) =
         success: false,
         message: 'User not found.',
         errorCode: 'NOT_FOUND_ERROR'
+      });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin accounts cannot be inspected in User Directory.',
+        errorCode: 'ADMIN_ACCOUNT_EXCLUDED'
       });
     }
 
@@ -125,6 +137,14 @@ router.put('/users/:id/action', protect, requireRole('admin'), async (req, res, 
         success: false,
         message: 'User not found.',
         errorCode: 'NOT_FOUND_ERROR'
+      });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Administrative actions cannot be performed on Admin accounts.',
+        errorCode: 'ADMIN_ACCOUNT_PROTECTED'
       });
     }
 

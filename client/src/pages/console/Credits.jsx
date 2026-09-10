@@ -59,7 +59,7 @@ export default function Credits() {
 
   const hasSub = Boolean(subscription && subscription.planId);
   const isCanceling = Boolean(subscription?.cancelAtPeriodEnd);
-  const planName = hasSub ? (subscription.planId.name || 'Starter') : 'No Active Plan';
+  const planName = hasSub ? (subscription.planId.name || 'Free') : 'Free';
   const planPrice = hasSub ? (subscription.planId.priceUSD || 19.99) : 0;
   const tokenQuota = hasSub ? (subscription.planId.featureLimits?.maxTokensPerMonth || 100000) : 0;
 

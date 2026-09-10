@@ -7,7 +7,7 @@ export default function Profile({ setCurrentRoute }) {
   const { user, subscription, currency } = useAuth();
 
   const hasSub = Boolean(subscription && subscription.planId);
-  const planName = hasSub ? (subscription.planId.name || 'Starter Plan') : 'No Active Plan';
+  const planName = hasSub ? (subscription.planId.name || 'Free') : 'Free';
   const planPrice = hasSub ? (subscription.planId.priceUSD || 19.99) : 0;
   const tokenQuota = hasSub ? (subscription.planId.featureLimits?.maxTokensPerMonth || 100000) : 0;
 
